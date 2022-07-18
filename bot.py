@@ -1,10 +1,14 @@
 # initiating bot
+import asyncio
 import os
 import discord
 from dotenv import load_dotenv
 from discord.ext import commands
+from discord import app_commands
 from f.alive import keep_alive
 import random
+import typing
+
 
 # get .env secrets
 load_dotenv()
@@ -14,13 +18,8 @@ OWNERS = os.getenv('OWNERS').split(", ")
 # import cogs
 initial_extensions = [
 	"jishaku",
-	"cogs._err",
-	"cogs._misc",
+	#"cogs._err",
 	"cogs._utility",
-	"cogs.crons",
-	"cogs.starboard",
-	"cogs.accounts",
-	"cogs.levels"
 ]
 
 # rich presence
@@ -34,9 +33,10 @@ activity = discord.Activity(
 intents = discord.Intents.default()
 intents.members = True
 intents.presences = True
+intents.message_content = True
 
 bot = commands.Bot(
-	command_prefix=["/"],
+	command_prefix=["."],
 	activity=activity,
 	status=discord.Status.idle,
 	afk=False,
@@ -45,12 +45,6 @@ bot = commands.Bot(
 	owner_ids=[690173341104865310, 722669121535475742],
 	case_insensitive=True
 )
-
-# load extensions
-if __name__ == '__main__':
-	for extension in initial_extensions:
-		bot.load_extension(extension)
-		print(f"📥 {extension}")
 
 
 @bot.event
@@ -68,33 +62,58 @@ async def on_ready():
 	# end it
 	await channel.send(f"------- `success {randcode}` -------")
 
-@bot.command(
-	name='dump',  # name of command, like !help
-	hidden=True,  # hide this command
-	help="""Dumps some stuff into the dump. Only usable by owners"""
-)
+@bot.tree.command(name="dump")
 @commands.is_owner()
-async def dump(ctx, *, content=None):
+async def dump(interaction: discord.Interaction, content: str = None, attachments: discord.Attachment = None) -> None:
+	"""
+	dumps the given content to the dump channel."""
+	await interaction.response.defer(ephemeral=True)
+	# ^ gives you 15 minutes extra to respond
+	# setting ephemeral here is required to send an ephemeral follow up
+
 	# dump channel here
 	channel = bot.get_channel(838335898755530762)
-	attachment = ctx.message.attachments
-	await ctx.message.delete()
+	links = []
+	attachment = attachments 
+	# if I emove this and name attachments just attachment, the bot breaks and doesn't send the attachment
+	# I thought the programmers in r/ProgrammerHumor were joking but nooo wth this useless line of code is important?
 	if content != None:
 		# send dump to channel
 		link = await channel.send(content)
 		# get the message link
-		link = link.jump_url
-	for i in attachment:
+		links.append(link.jump_url)
+	if attachment != None:
 		# send file to channel
-		await channel.send(file=await i.to_file(use_cached=True))
+		print(attachment)
+		link = await channel.send(file=await attachment.to_file(use_cached=True))
+		links.append(link.jump_url)
+	
+	description = []
+	i = 1
+	for link in links:
+		description.append(f"[Jump to Dump ({i})]({link})")
+		i += 1
+	description = "\n".join(description)
 
 	embed = discord.Embed(
+		type="rich",
 		title='Successfully dumped!',
-		description=f'[Jump to Dump]({link})'
+		description=description
 	)
 	# send message, delete after 5 seconds
-	await ctx.send(embed=embed, delete_after=5)
+	await interaction.followup.send(embed=embed)
+
 
 # run the bot
 keep_alive()
-bot.run(TOKEN)
+
+async def main():
+	async with bot:
+		# load extensions
+		for extension in initial_extensions:
+			await bot.load_extension(extension)
+			print(f"📥 {extension}")
+		# start the bot
+		await bot.start(TOKEN)
+
+asyncio.run(main())

@@ -14,7 +14,7 @@ class MyHelpCommand(commands.MinimalHelpCommand):
 			await destination.send(embed=emby)
 
 	async def send_bot_help(self, mapping):  # help
-		embed = discord.Embed(title="Lumen Help",)  # the title
+		embed = discord.Embed(title="Treebot Help",)  # the title
 		for cog, commands in mapping.items():
 			# commands
 			filtered = await self.filter_commands(commands, sort=True)

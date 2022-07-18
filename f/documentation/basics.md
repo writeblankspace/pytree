@@ -1,0 +1,169 @@
+# Where to start
+
+sometimes you just don't know when to start. so here ya go, have some quick-start code that you can just copy/paste because you"re too lazy
+
+## New commands and command groups
+
+### New command
+
+In main:
+```py
+@bot.command(
+	name = "cmd_name",
+	help = """cmd_help""",
+	aliases = ["cmd_alias"],
+	enabled = True
+	)
+async def dump(ctx):
+	pass
+```
+
+In a cog:
+```py
+	@commands.command(
+		name = "cmd_name",
+		help = """cmd_help""",
+		aliases = ["cmd_alias"],
+		enabled = True
+		)
+	async def cmd_name(self, ctx):
+		pass
+```
+
+### Making a new cog
+
+```py
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+class cogname(commands.Cog):
+	def __init__(self, bot):
+		self.bot = bot
+
+async def setup(bot):
+    await bot.add_cog(MyCog(bot))
+```
+
+### Slash commands!
+```py
+import discord
+from discord import app_commands
+from discord.ext import commands
+
+class MyCog(commands.Cog):
+  def __init__(self, bot: commands.Bot) -> None:
+    self.bot = bot
+    
+  group = app_commands.Group(name="parent", description="...")
+  # Above, we declare a command Group, in discord terms this is a parent command
+  # We define it within the class scope (not an instance scope) so we can use it as a decorator.
+  # This does have namespace caveats but i don't believe they're worth outlining in our needs.
+
+  @app_commands.command(name="top-command")
+  async def my_top_command(self, interaction: discord.Interaction) -> None:
+    """ /top-command """
+    await interaction.response.send_message("Hello from top level command!", ephemeral=True)
+
+  @group.command(name="sub-command") # we use the declared group to make a command.
+  async def my_sub_command(self, interaction: discord.Interaction) -> None:
+    """ /parent sub-command """
+    await interaction.response.send_message("Hello from the sub command!", ephemeral=True)
+
+async def setup(bot: commands.Bot) -> None:
+  await bot.add_cog(MyCog(bot))
+```
+
+## Command features
+
+### Embeds
+
+```py
+embed = discord.Embed(
+	title = "Test Embed", 
+	description = "hello world",
+	colour = 0xFFFFFF
+	)
+
+embed.colour = 0xFFFFFF
+
+# Images
+embed.set_image(url = "Image Url")
+embed.set_thumbnail(url = "Image Url")
+
+embed.set_author(
+	name = "Author name", 
+	url = "Url to author", 
+	icon_url = "Image Url"
+	)
+
+embed.set_footer(
+	text = "Example footer", 
+	icon_url = "Image Url"
+	) 
+
+embed.timestamp = datetime.datetime.utcnow() 
+
+embed.add_field(
+	name = "Name [256 char max]", 
+	value = "Content [1024 char]", 
+	inline=True
+	) 
+# max 25 fields
+
+# Async:
+await bot.say(embed=embed)
+# or: await bot.send_message(channel, embed=embed)
+
+# Rewrite:
+await ctx.send(embed=embed)
+ # or: await channel.send(embed=embed)
+```
+
+### Colours
+
+```py
+won = 0x79ffc2
+lost = 0xff7998
+draw = 0xf7b90f
+```
+
+### Cooldowns
+
+```py
+from discord.ext import commands
+
+def cooldown_cmd(rate, per, type):
+	""" **Adds a cooldown to the command** \n
+	rate = how many times user can use the command \n
+	per = the cooldown in seconds \n
+	type = the type of cooldown \n
+	**Add the following code to command:**\n 
+	```
+	cooldown = cooldown_cmd(rate, per, type)
+	bucket = message_cooldown.get_bucket(message/ctx)
+	retry_after = bucket.update_rate_limit()
+	
+	if retry_after:
+	  pass # if there's a cooldown, do this
+	else:
+	  pass # if there's no cooldown, do this
+	```
+	"""
+	cooldown = commands.CooldownMapping
+
+	if type == "default":
+		return cooldown.from_cooldown(rate, per, commands.BucketType.default)
+	if type == "user":
+		return cooldown.from_cooldown(rate, per, commands.BucketType.user)
+	if type == "guild":
+		return cooldown.from_cooldown(rate, per, commands.BucketType.guild)
+	if type == "channel":
+		return cooldown.from_cooldown(rate, per, commands.BucketType.channel)
+	if type == "member":
+		return cooldown.from_cooldown(rate, per, commands.BucketType.member)
+	if type == "category":
+		return cooldown.from_cooldown(rate, per, commands.BucketType.category)
+	if type == "role":
+		return cooldown.from_cooldown(rate, per, commands.BucketType.role)
+```

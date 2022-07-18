@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from discord import app_commands
 from f.alive import keep_alive
+from f.templates import templates, errbeds
+from f.checks import *
 import random
 import typing
 
@@ -63,7 +65,11 @@ async def on_ready():
 	await channel.send(f"------- `success {randcode}` -------")
 
 @bot.tree.command(name="dump")
-@commands.is_owner()
+@app_commands.describe(
+	content = "the content to dump into the channel",
+	attachments = "the attachments to dump into the channel"
+	)
+@app_commands.check(owner_only)
 async def dump(interaction: discord.Interaction, content: str = None, attachments: discord.Attachment = None) -> None:
 	"""
 	dumps the given content to the dump channel."""
@@ -103,6 +109,16 @@ async def dump(interaction: discord.Interaction, content: str = None, attachment
 	# send message, delete after 5 seconds
 	await interaction.followup.send(embed=embed)
 
+@dump.error
+async def owneronly_error(
+	interaction: Interaction,
+	error: app_commands.AppCommandError
+):
+	if isinstance(error, app_commands.CheckFailure):
+		await interaction.response.send_message(embed=errbeds.restricted, ephemeral=True)
+		return
+
+	raise error
 
 # run the bot
 keep_alive()

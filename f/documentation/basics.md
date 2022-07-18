@@ -74,6 +74,34 @@ async def setup(bot: commands.Bot) -> None:
   await bot.add_cog(MyCog(bot))
 ```
 
+### Slash Command Checks
+
+```py
+from discord import app_commands, Interaction
+
+# in a class (cog)
+# @staticmethod
+# ^ required if this function is in a cog
+async def owner_only(interaction: Interaction):
+    return await interaction.client.is_owner(interaction.user)
+
+@tree.command()
+@app_commands.check(owner_only) # <- Passing our check function
+async def owneronly(interaction: Interaction):
+    await interaction.response.send_message("Yes, you are my owner!")
+
+@owneronly.error
+async def owneronly_error(
+    interaction: Interaction,
+    error: app_commands.AppCommandError
+):
+    if isinstance(error, app_commands.CheckFailure):
+        await interaction.response.send_message(f"{interaction.user} you are not my owner!", ephemeral=True)
+        return
+
+    raise error
+```
+
 ## Command features
 
 ### Embeds

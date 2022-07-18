@@ -59,8 +59,19 @@ class Templates(object):
 			pfp=self.pfp
 		)
 
+class Errbeds(object):
+	""" Templates for every error! """
+
+	def __init__(self):
+		self.restricted = discord.Embed(
+			title = "Restricted Command", 
+			description = "This command is restricted to the bot owner only.",
+			colour = templates.colours["fail"]
+			)
+
 
 templates = Templates()
+errbeds = Errbeds()
 # templates.pfp
 # templates.colours[(colour)]
 # templates.embeds.(default | colour)

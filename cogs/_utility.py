@@ -1,6 +1,8 @@
+from turtle import color
 import discord
 from discord import app_commands
 from discord.ext import commands
+from pyparsing import col
 from f.__index__ import *
 from f.githubissues import make_github_issue
 import traceback
@@ -18,9 +20,19 @@ class utility(commands.Cog):
 		await interaction.response.defer(ephemeral=True)
 
 		latency = round(self.bot.latency * 1000, 2)
+
+		if latency > 500:
+			colour = templates.colours["fail"]
+		elif latency > 100:
+			colour = templates.colours["draw"]
+		else:
+			colour = templates.colours["success"]
+
 		embed = discord.Embed(
 			title="🏓 Pong!",
-			description=f'**`{latency}` ms**')
+			description=f'**`{latency}` ms**',
+			color=colour
+		)
 
 		await interaction.followup.send(embed=embed)
 	

@@ -56,7 +56,13 @@ async def on_ready():
 	print(f'{bot.user} has connected to Discord! [{randcode}]')
 	print(f'Successfully logged in and booted...!')
 
-	await channel.send(f"`{randcode}` Connected!")
+	embed = discord.Embed(
+		title=f"Connected!",
+		description=f"`{randcode}`",
+		color=templates.colours["success"]
+	)
+
+	await channel.send(embed=embed)
 
 @bot.tree.command(name="dump")
 @app_commands.describe(

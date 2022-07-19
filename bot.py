@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from discord import app_commands
 from f.alive import keep_alive
-from f.templates import templates, errbeds
+from f.templates import templates
 from f.checks import *
 import random
 import typing
@@ -37,7 +37,7 @@ intents.presences = True
 intents.message_content = True
 
 bot = commands.Bot(
-	command_prefix=["."],
+	command_prefix=["/"],
 	activity=activity,
 	status=discord.Status.idle,
 	afk=False,
@@ -56,12 +56,7 @@ async def on_ready():
 	print(f'{bot.user} has connected to Discord! [{randcode}]')
 	print(f'Successfully logged in and booted...!')
 
-	# log channel
-	await channel.send(f"------- `restart {randcode}` -------")
-	# say it's connected
 	await channel.send(f"`{randcode}` Connected!")
-	# end it
-	await channel.send(f"------- `success {randcode}` -------")
 
 @bot.tree.command(name="dump")
 @app_commands.describe(
@@ -71,7 +66,7 @@ async def on_ready():
 @app_commands.check(owner_only)
 async def dump(interaction: discord.Interaction, content: str = None, attachments: discord.Attachment = None) -> None:
 	"""
-	Dumps the given content to the dump channel."""
+	[RESTRICTED] Dumps the given content to the dump channel."""
 	await interaction.response.defer(ephemeral=True)
 	# ^ gives you 15 minutes extra to respond
 	# setting ephemeral here is required to send an ephemeral follow up
@@ -101,9 +96,9 @@ async def dump(interaction: discord.Interaction, content: str = None, attachment
 	description = "\n".join(description)
 
 	embed = discord.Embed(
-		type="rich",
 		title='Successfully dumped!',
-		description=description
+		description=description,
+		color=templates.colours["success"]
 	)
 	# send message, delete after 5 seconds
 	await interaction.followup.send(embed=embed)
@@ -114,7 +109,12 @@ async def owneronly_error(
 	error: app_commands.AppCommandError
 ):
 	if isinstance(error, app_commands.CheckFailure):
-		await interaction.response.send_message(embed=errbeds.restricted, ephemeral=True)
+		embed = discord.Embed(
+			title = "Restricted Command", 
+			description = "This command is restricted to the bot owner only.",
+			colour = templates.colours["fail"]
+		)
+		await interaction.response.send_message(embed=embed, ephemeral=True)
 		return
 
 	raise error

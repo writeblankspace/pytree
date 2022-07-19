@@ -1,60 +1,51 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
-from cogs._help import MyHelpCommand
-
 
 class utility(commands.Cog):
 	def __init__(self, bot) -> None:
 		self.bot = bot
-		''' help command stuff
-		self._original_help_command = bot.help_command
-		bot.help_command = MyHelpCommand()
-		bot.help_command.cog = self
-		'''
 
-	'''
-	def cog_unload(self):
-		# for help cmd
-		self.bot.help_command = self._original_help_command
-	'''
+	@app_commands.command(name='ping')
+	async def ping(self, interaction: discord.Interaction):
+		"""
+		Displays the bot's latency. This is the time it takes for the bot to respond to a message. """
+		await interaction.response.defer(ephemeral=True)
 
-	@commands.command(
-		name='ping',
-		help="""Displays the bot's latency.
-			This means how fast the bot works. 
-			It may differ based on what command you are using.
-
-			**Latency Table**
-			`00.00 - 20.00` = seamlessly fast
-			`20.00 - 30.00` = average latency
-			`30.00 - 50.00` = normally slow
-			`50.00 - 70.00` = somewhat slow
-			`70.00 and above` = heavy duty""",
-		aliases=["latency", "pong"]
-	)
-	async def ping(self, ctx):
 		latency = round(self.bot.latency * 1000, 2)
 		embed = discord.Embed(
 			title="🏓 Pong!",
 			description=f'**`{latency}` ms**')
-		await ctx.send(embed=embed)
+
+		await interaction.followup.send(embed=embed)
 	
-	@commands.command(
-		name="screenshot",
-		help="""Creates a screenshot of the given url.
-			
-			Uses the [this](https://www.thum.io) api to create screenshots.
-			
-			Try passing [a google search](https://www.google.com/search?q=google+search) as the url.
-			Or you can check [the bot status](https://stats.uptimerobot.com/n7ZkztG2WV/788342560).""",
-		aliases=["ss", "sc", "shot", "screen", "print", "prt", "prtsc"]
+	@app_commands.command(name="screenshot")
+	@app_commands.describe(
+		url="the url of the website you want to screenshot. Must start with 'http://' or 'https://'"
 	)
-	async def screenshot(self, ctx, url: str = None):
-		if url == None:
-			u = "https://google.com/search?q=pass+a+url+argument"
-		else:
-			u = url
-		await ctx.send(f"https://image.thum.io/get/noanimate/{u}")
+	async def screenshot(self, interaction: discord.Interaction, url: str):
+		"""
+		Creates a screenshot of the given url. """
+		await interaction.response.defer(ephemeral=True)
+		screenshot = f"https://image.thum.io/get/noanimate/{url}"
+		await interaction.followup.send(f"**This may take a while to load.**\n{screenshot}")
+	
+	@screenshot.autocomplete("url")
+	async def screenshot_autocomplete(self, interaction: discord.Interaction, current: str):
+		return [
+			app_commands.Choice(
+				name='https://www.google.com/search?q=google+search', 
+				value='https://www.google.com/search?q=google+search'
+			),
+			app_commands.Choice(
+				name='https://discord.com', 
+				value='https://discord.com'
+			),
+			app_commands.Choice(
+				name="https://github.com/writeblankspace/pytree",
+				value="https://github.com/writeblankspace/pytree"
+			)
+		]
 
 
 async def setup(bot):

@@ -63,7 +63,11 @@ class MyCog(commands.Cog):
   @app_commands.command(name="top-command")
   async def my_top_command(self, interaction: discord.Interaction) -> None:
     """ /top-command """
-    await interaction.response.send_message("Hello from top level command!", ephemeral=True)
+    await interaction.response.defer(ephemeral=True)
+	# this works better
+	await interaction.followup.send("Hello from the top command!")
+	# defer is always followed by followup.send
+
 
   @group.command(name="sub-command") # we use the declared group to make a command.
   async def my_sub_command(self, interaction: discord.Interaction) -> None:
@@ -100,6 +104,22 @@ async def owneronly_error(
         return
 
     raise error
+```
+
+### Slash Command Autocomplete
+```py
+@app_commands.command(...)
+async def foo(interaction: discord.Interaction, bar: str):
+    ...
+
+@foo.autocomplete('bar')
+async def autocomplete_callback(interaction: discord.Interaction, current: str):
+    # Do stuff with the "current" parameter, e.g. querying it search results...
+
+    # Then return a list of app_commands.Choice
+    return [
+        app_commands.Choice(name='Option 1', value='Option 1')
+    ]
 ```
 
 ## Command features

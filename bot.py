@@ -20,15 +20,14 @@ OWNERS = os.getenv('OWNERS').split(", ")
 # import cogs
 initial_extensions = [
 	"jishaku",
-	#"cogs._err",
 	"cogs._utility",
 ]
 
 # rich presence
 activity = discord.Activity(
 	# TODO change the status every so often
-	name="If the story's over, why am I still writing pages?",
-	type=discord.ActivityType.listening
+	name="nothingness",
+	type=discord.ActivityType.watching
 )
 
 # Discord Intents settings
@@ -72,7 +71,7 @@ async def on_ready():
 @app_commands.check(owner_only)
 async def dump(interaction: discord.Interaction, content: str = None, attachments: discord.Attachment = None) -> None:
 	"""
-	dumps the given content to the dump channel."""
+	Dumps the given content to the dump channel."""
 	await interaction.response.defer(ephemeral=True)
 	# ^ gives you 15 minutes extra to respond
 	# setting ephemeral here is required to send an ephemeral follow up

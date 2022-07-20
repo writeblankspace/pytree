@@ -21,6 +21,7 @@ OWNERS = os.getenv('OWNERS').split(", ")
 initial_extensions = [
 	"jishaku",
 	"cogs._utility",
+	"cogs.levelling"
 ]
 
 # rich presence

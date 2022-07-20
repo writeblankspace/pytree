@@ -31,13 +31,15 @@ class DB:
 		with open("database.json", "w") as f:
 			f.write(json_data)
 	
-	def exists(self, to_key: list, create: bool = False) -> bool:
+	def exists(self, to_key: list, create: bool = False, value = None) -> bool:
 		"""
 		Sees if the key exists.
 
 		`to_key` is the path to go to the key, eg `["path", "to", "key"]`
 
-		`create` is whether or not to create the key if it doesn't exist. The value becomes `None`.
+		`create` is whether or not to create the key if it doesn't exist.
+
+		`value` what the key's value will be if it is created.
 		
 		Returns a `bool` of whether the key exists or not. """
 
@@ -51,7 +53,7 @@ class DB:
 					data[to_key[i]] = {}
 				elif create:
 					# last key, so create it with a value of None
-					data[to_key[i]] = None
+					data[to_key[i]] = value
 				else:
 					# we don't want to create it, and it doesn't exist
 					return False

@@ -13,7 +13,7 @@ class Levelling(commands.Cog):
 		self.zwnbs = "﻿" # zero-width no-break space
 
 		# 1 message in 60 seconds
-		self.cooldown = commands.CooldownMapping.from_cooldown(1.0, 1.0, commands.BucketType.user)
+		self.cooldown = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.user)
 
 	def find_next_level(self, xp):
 		"""

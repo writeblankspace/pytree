@@ -46,6 +46,11 @@ class Levelling(commands.Cog):
 		
 		return NextLevel(i - 1, xp_needed)
 	
+	def xp_for_level(self, level: int):
+		"""
+		Returns the xp needed to reach the given level """
+		return (50 * level**2) + (25 * level)
+	
 	@commands.Cog.listener('on_message')
 	async def leveling_listener(self, message: discord.Message):
 		guild = str(message.guild.id)
@@ -82,6 +87,9 @@ class Levelling(commands.Cog):
 	group = app_commands.Group(name="levelling", description="Levelling commands")
 
 	@group.command(name="rank")
+	@app_commands.describe(
+		member = "the member whose rank you'd like to view"
+	)
 	async def rank(self, interaction: discord.Interaction, member: discord.User = None) -> None:
 		"""
 		View your rank in the server. """
@@ -133,12 +141,12 @@ class Levelling(commands.Cog):
 
 			embed = discord.Embed(
 				# `▰▰▰▰▰▰▰▱▱▱`` 70/100 xp
-				description = f"`{progressbar}` {currentxp - prev_xp_needed}/{xp_needed - prev_xp_needed} xp", 
+				description = f"""{progressbar} {currentxp - prev_xp_needed}/{xp_needed - prev_xp_needed} xp""", 
 			)
 
 			embed.set_author(
 				# taylorswift#1989 | level 13 | #1
-				name = f"{member.name}#{member.discriminator} | level {currentlevel}", 
+				name = f"{member.name}#{member.discriminator} | lvl {currentlevel} | #13", 
 				icon_url = member.avatar.url
 			)
 

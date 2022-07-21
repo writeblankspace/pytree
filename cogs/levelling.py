@@ -88,9 +88,10 @@ class Levelling(commands.Cog):
 
 	@group.command(name="rank")
 	@app_commands.describe(
-		member = "the member whose rank you'd like to view"
+		member = "the member whose rank you'd like to view",
+		ephemeral = "whether or not others should see the bot's reply"
 	)
-	async def rank(self, interaction: discord.Interaction, member: discord.User = None) -> None:
+	async def rank(self, interaction: discord.Interaction, member: discord.User = None, ephemeral: bool = False) -> None:
 		"""
 		View your rank in the server. """
 		if member == None:
@@ -99,7 +100,7 @@ class Levelling(commands.Cog):
 			member = member
 
 		if member.bot == False:
-			await interaction.response.defer(ephemeral=False)
+			await interaction.response.defer(ephemeral=ephemeral)
 
 			guild = str(interaction.guild.id)
 			author = str(member.id)
@@ -126,10 +127,6 @@ class Levelling(commands.Cog):
 			progress = progress / 10
 			# round it to the nearest integer, eg 7
 			progress = round(progress)
-			
-			self.full_progress = "▰"
-			self.empty_progress = "▱"
-			self.zwnbs = "﻿" # zero-width no-break space
 
 			# create the progressbar
 			progressbar += self.full_progress * progress

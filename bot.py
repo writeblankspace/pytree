@@ -10,6 +10,9 @@ from f.templates import templates
 from f.checks import *
 import random
 import typing
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 
 # get .env secrets

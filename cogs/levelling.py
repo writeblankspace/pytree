@@ -3,6 +3,9 @@ from discord import app_commands
 from discord.ext import commands
 from f.__index__ import *
 from db.db import db
+from PIL import *
+import os
+from io import BytesIO
 
 class Levelling(commands.Cog):
 	def __init__(self, bot):
@@ -13,7 +16,7 @@ class Levelling(commands.Cog):
 		self.zwnbs = "﻿" # zero-width no-break space
 
 		# 1 message in 60 seconds
-		self.cooldown = commands.CooldownMapping.from_cooldown(1.0, 60.0, commands.BucketType.user)
+		self.cooldown = commands.CooldownMapping.from_cooldown(1.0, 20.0, commands.BucketType.user)
 
 	def find_next_level(self, xp):
 		"""
@@ -110,42 +113,21 @@ class Levelling(commands.Cog):
 
 			data = db.read()
 
+			# just get some data yeah
 			nextlevel = self.find_next_level(data[guild][author]["xp"])
 			xp_needed = nextlevel.xp_needed
 			prev_xp_needed = nextlevel.prev_xp_needed
 			currentxp = data[guild][author]['xp']
 			currentlevel = nextlevel.currentlevel
 
-			# create a progressbar!
-			progressbar = ""
-
-			# calculate the progress
-			progress = (currentxp - prev_xp_needed) / (xp_needed - prev_xp_needed)
+			# calculate the progress, eg 0.713
+			if (xp_needed - prev_xp_needed) > 0:
+				progress = (currentxp - prev_xp_needed) / (xp_needed - prev_xp_needed)
+			else:
+				progress = 1
 			# make it a percentage, eg 71.3%
-			progress = progress * 100
-			# divide it by 10 to make it x/10, eg 7.13
-			progress = progress / 10
-			# round it to the nearest integer, eg 7
-			progress = round(progress)
-
-			# create the progressbar
-			progressbar += self.full_progress * progress
-			progressbar += self.empty_progress * (10 - progress)
-
-			# put a zero-width no-break space after every character
-			# this will make it better for small screens
-			progressbar = progressbar.replace("", self.zwnbs)
-
-			embed = discord.Embed(
-				# `▰▰▰▰▰▰▰▱▱▱`` 70/100 xp
-				description = f"""{progressbar} {currentxp - prev_xp_needed}/{xp_needed - prev_xp_needed} xp""", 
-			)
-
-			embed.set_author(
-				# taylorswift#1989 | level 13 | #1
-				name = f"{member.name}#{member.discriminator} | lvl {currentlevel} | #13", 
-				icon_url = member.avatar.url
-			)
+			progress *= 100
+			progresspercent = progress
 
 			# get a tree thumbnail!
 			# find out what tree you get
@@ -164,12 +146,38 @@ class Levelling(commands.Cog):
 			elif currentlevel >= 30:
 				tree = "7"
 			
-			f = discord.File(f"trees/default/{tree}.png", filename=f"{tree}.png")
-			embed.set_thumbnail(url=f"attachment://{tree}.png")
+			# truncate xp needed to fit in the embed
+			currentxp_embed = (currentxp - prev_xp_needed)
+			xp_needed_embed = (xp_needed - prev_xp_needed)
+			if currentxp_embed >= 1000:
+				currentxp_embed = f"{round(currentxp_embed / 1000)}k"
+			if xp_needed_embed >= 1000:
+				xp_needed_embed = f"{round(xp_needed_embed / 1000)}k"
+			
+			if currentxp_embed <= 0:
+				currentxp_embed = 0
 
-			await interaction.followup.send(file=f, embed=embed)
+			# python pillow
+			rankcardimg = rankcard(
+				pfpurl = member.avatar.url,
+				username = member.name,
+				discrim = member.discriminator,
+				other = f"lvl {currentlevel} | {currentxp_embed}/{xp_needed_embed} xp | #13",
+				treenumber = tree,
+				color = (88, 101, 242),
+				progress = round(progresspercent)
+			)
 
-			f""" **level {currentlevel}:** {currentxp}/{xp_needed}") """
+			# save the image to buffer
+			# basically like a 'file' that isn't physically there
+			buffer = BytesIO()
+			rankcardimg.save(buffer, "png")
+			buffer.seek(0)
+
+			rankcardfile = discord.File(fp=buffer, filename="rankcard.png")
+
+			await interaction.followup.send(files=[rankcardfile])
+
 		else:
 			await interaction.response.defer(ephemeral=True)
 

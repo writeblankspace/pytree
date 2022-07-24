@@ -30,7 +30,7 @@ initial_extensions = [
 # rich presence
 activity = discord.Activity(
 	# TODO change the status every so often
-	name="nothingness",
+	name="the 1989 World Tour - TS",
 	type=discord.ActivityType.watching
 )
 

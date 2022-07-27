@@ -24,7 +24,7 @@ initial_extensions = [
 	"jishaku",
 	"cogs._utility",
 	"cogs.levelling",
-	"cogs.admin",
+	"cogs._admin",
 	"cogs.starboard"
 ]
 

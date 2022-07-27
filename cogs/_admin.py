@@ -3,6 +3,10 @@ from discord import app_commands
 from discord.ext import commands
 from f.checks import *
 from f.__index__ import *
+from db.db import db
+from cogs.levelling import Levelling
+import time
+
 
 class Admin(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
@@ -70,6 +74,83 @@ class Admin(commands.Cog):
 			return
 
 		raise error
+
+	@group.command(name="archivemonth")
+	@app_commands.check(owner_only)
+	@app_commands.describe(
+		date = "the archive's id in the format YYYY/MM"
+	)
+	async def archivemonth(self, interaction: Interaction, date: str) -> None:
+		"""
+		[RESTRICTED] Archives the members' trees to their forest """
+		await interaction.response.defer(ephemeral=True)
+
+		# this command archives all the trees and puts it in the members' forests
+		# the trees are archived into the archive channel to make the image links permanent
+
+		archivechannel = self.bot.get_channel(1001804054965518436)
+		guild = str(interaction.guild.id)
+
+		# get rid of errors
+		dbexists = db.exists([guild], False)
+		if not dbexists:
+			return
+		
+		data = db.read()
+
+		levellingfuncs = Levelling(self.bot)
+		find_next_level = levellingfuncs.find_next_level
+		findtree = levellingfuncs.findtree
+
+		await archivechannel.send(f"**Archiving trees for {date}**")
+		
+		# get all the trees
+		keys = data[guild].keys()
+
+		for key in keys:
+			userid = str(key)
+
+			db.exists([guild, userid, "forest", date], True, {})
+			data = db.read()
+
+			user = data[guild][userid]
+
+			xp = user["xp"]
+			level = find_next_level(xp).currentlevel
+			tree = findtree(level)
+
+			# get timestamp now
+			timestamp = time.time()
+			# round the time
+			timestamp = round(timestamp)
+			# make it a discord timestamp
+			timestamp = f"<t:{timestamp}:R>"
+
+			# get the user's tree
+			f = discord.File(f"trees/default/{tree}.png", filename=f"{userid}'s_tree.png")
+			message = await archivechannel.send(f"{userid}'s tree\n**{date}** {timestamp}", file=f)
+
+			# get the attachment links
+			attachments = message.attachments
+			url = attachments[0].url
+			
+			# update the database
+			data[guild][userid]["forest"][f"{date}"]["tree"] = url
+			data[guild][userid]["forest"][f"{date}"]["xp"] = xp
+			data[guild][userid]["forest"][f"{date}"]["level"] = level
+
+			# reset the user's xp
+			data[guild][userid]["xp"] = 0
+
+			db.write(data)
+		
+		embed = discord.Embed(
+			title = f"Archived {date}",
+			color = templates.colours["success"]
+		)
+
+		await interaction.followup.send(embed=embed)
+
 
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Admin(bot))

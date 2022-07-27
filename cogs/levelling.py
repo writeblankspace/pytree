@@ -54,6 +54,26 @@ class Levelling(commands.Cog):
 		Returns the xp needed to reach the given level """
 		return (50 * level**2) + (25 * level)
 	
+	def findtree(self, level :int):
+		"""
+		Find out what tree you get for the given level """
+		if level < 5:
+			tree = "1"
+		elif level < 10:
+			tree = "2"
+		elif level < 15:
+			tree = "3"
+		elif level < 20:
+			tree = "4"
+		elif level < 25:
+			tree = "5"
+		elif level < 30:
+			tree = "6"
+		elif level >= 30:
+			tree = "7"
+		
+		return tree
+	
 	@commands.Cog.listener('on_message')
 	async def leveling_listener(self, message: discord.Message):
 		author = str(message.author.id)
@@ -135,20 +155,7 @@ class Levelling(commands.Cog):
 
 			# get a tree thumbnail!
 			# find out what tree you get
-			if currentlevel < 5:
-				tree = "1"
-			elif currentlevel < 10:
-				tree = "2"
-			elif currentlevel < 15:
-				tree = "3"
-			elif currentlevel < 20:
-				tree = "4"
-			elif currentlevel < 25:
-				tree = "5"
-			elif currentlevel < 30:
-				tree = "6"
-			elif currentlevel >= 30:
-				tree = "7"
+			tree = self.findtree(currentlevel)
 			
 			# truncate xp needed to fit in the embed
 			currentxp_embed = (currentxp - prev_xp_needed)

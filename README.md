@@ -9,3 +9,5 @@ To start using the bot, type `/` in the chat! To learn more about using the bot,
 ---
 
 `Made with 🤍 by Gabrielle`
+
+[Website](https://pytree.tumblr.com/) | [GitHub](https://github.com/writeblankspace/pytree/) | [Wikis](https://github.com/writeblankspace/pytree/wiki)

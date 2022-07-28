@@ -105,7 +105,7 @@ class Levelling(commands.Cog):
 				randxp = random.randint(15, 40)
 				data[guild][author]["xp"] += randxp
 
-				if data[guild][author]["xp"] >= xp_needed:
+				if data[guild][author]["xp"] > xp_needed:
 					currentlevel += 1
 					await message.reply(f"{message.author.mention} has leveled up to level {currentlevel}!")
 

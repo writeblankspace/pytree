@@ -120,7 +120,7 @@ class Levelling(commands.Cog):
 	)
 	async def rank(self, interaction: discord.Interaction, member: discord.User = None, ephemeral: bool = True) -> None:
 		"""
-		View your rank in the server. """
+		Views a user's rank. """
 		if member == None:
 			member = interaction.user
 		else:
@@ -502,6 +502,149 @@ class Levelling(commands.Cog):
 			view = lb
 		)
 
+	class ForestDropdown(discord.ui.Select):
+		def __init__(self, show_tree, treekeys: list, forest: dict, member: discord.User, ephemeral: bool = True):
+			# Set the options that will be presented inside the dropdown
+			self.show_tree = show_tree
+			self.treekeys = treekeys
+			self.forest = forest
+			self.member = member
+			self.ephemeral = ephemeral
+
+			options = []
+
+			for treekey in treekeys:
+				options.append(
+					discord.SelectOption(
+						label=treekey,
+					)
+				)
+
+			# dropdown settings
+			super().__init__(
+				placeholder='Choose a tree to view...', 
+				min_values=1, 
+				max_values=1, 
+				options=options
+			)
+
+		async def callback(self, interaction: discord.Interaction):
+			# self.values is a list of the selected options
+			# get the selected tree
+			treekey = self.values[0]
+			embed = self.show_tree(treekey)
+			await interaction.response.send_message(
+				embed = embed,
+				ephemeral = self.ephemeral
+			)
+	
+	class ForestDropdownView(discord.ui.View):
+		def __init__(self, ForestDropdown, show_tree, treekeys: list, forest: dict, member: discord.User, ephemeral: bool = True):
+			super().__init__()
+
+			# Adds the dropdown to our view object.
+			self.add_item(
+				ForestDropdown(
+					show_tree = show_tree,
+					treekeys = treekeys,
+					forest = forest,
+					member = member,
+					ephemeral = ephemeral
+				)
+			)
+
+	@group.command(name="forest")
+	@app_commands.describe(
+		ephemeral = "whether or not others should see the bot's reply",
+		member = "the member to view the forest of"
+	)
+	async def forest(self, interaction: discord.Interaction, ephemeral: bool = True, member: discord.User = None) -> None:
+		"""
+		Views a user's forest. """
+
+		if member == None:
+			member = interaction.user
+		else:
+			member = member
+
+		if member.bot == False:
+			await interaction.response.defer(ephemeral=ephemeral)
+
+			guild = str(interaction.guild.id)
+			userid = str(member.id)
+
+			# check if it exists to get rid of errors
+			db.exists([guild, userid, "forest"], True, {})
+			data = db.read()
+
+			""" 
+			forest = {
+				f"{date}": {
+					"tree": url
+					"xp": xp
+					"level": level
+				}
+			} """
+
+			# get the forest
+			forest = data[guild][userid]["forest"]
+			# sort the forest dict alphabetically by the date
+			# find keys of forest
+			keys = list(forest.keys())
+			# sort the keys
+			keys.sort()
+
+			if len(keys) == 0:
+				embed = discord.Embed(
+					title = f"There aren't any trees in {member.name}'s forest yet!", 
+					colour = templates.colours["fail"]
+				)
+				await interaction.followup.send(embed=embed)
+				return
+
+			def show_tree(date: int) -> discord.Embed:
+				currenttree = forest[date]
+				tree = currenttree["tree"]
+				xp = currenttree["xp"]
+				level = currenttree["level"]
+
+				embed = discord.Embed(
+					title = f"{member.name}'s tree for {date}",
+					description = f"level {level} | {xp} xp"
+				)
+
+				embed.set_image(url=tree)
+
+				return embed
+			
+			if len(keys) == 1:
+				description = "There is 1 tree in this forest."
+			else:
+				description = f"There are {len(keys)} trees in this forest."
+			
+			embed = discord.Embed(
+				title = f"{member.name}'s forest",
+				description = description
+			)
+			view = self.ForestDropdownView(
+				ForestDropdown = self.ForestDropdown,
+				show_tree = show_tree,
+				treekeys = keys,
+				forest = forest,
+				member = member,
+				ephemeral = ephemeral
+			)
+
+			await interaction.followup.send(embed=embed, view=view)
+		else:
+			# imagine viewing a bot's forest
+			await interaction.response.defer(ephemeral=True)
+
+			embed = discord.Embed(
+				title = "Bots don't have forests!", 
+				colour = templates.colours["fail"]
+			)
+			await interaction.followup.send(embed=embed)
 
 
 

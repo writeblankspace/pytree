@@ -221,7 +221,7 @@ class Levelling(commands.Cog):
 			)
 			await interaction.followup.send(embed=embed)
 	
-	# leaderboard button
+	# leaderboard
 	class LeaderboardView(discord.ui.View):
 		"""
 		Buttons for the /leaderboard command """
@@ -471,7 +471,6 @@ class Levelling(commands.Cog):
 			# Make sure to update the message with our updated selves
 			await interaction.response.edit_message(embed=embed, view=self)
 
-	
 	@group.command(name="leaderboard")
 	@app_commands.describe(
 		ephemeral = "whether or not others should see the bot's reply",
@@ -502,6 +501,7 @@ class Levelling(commands.Cog):
 			view = lb
 		)
 
+	# forest
 	class ForestDropdown(discord.ui.Select):
 		def __init__(self, show_tree, treekeys: list, forest: dict, member: discord.User, ephemeral: bool = True):
 			# Set the options that will be presented inside the dropdown

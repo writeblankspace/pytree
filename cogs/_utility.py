@@ -11,7 +11,7 @@ class utility(commands.Cog):
 	def __init__(self, bot) -> None:
 		self.bot = bot
 
-	group = app_commands.Group(name="utility", description="Miscellaneous commands")
+	group = app_commands.Group(name="utility", description="Miscellaneous commands: various useful commands that don't fit anywhere else")
 
 	@group.command(name='ping')
 	async def ping(self, interaction: discord.Interaction):

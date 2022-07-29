@@ -23,8 +23,9 @@ OWNERS = os.getenv('OWNERS').split(", ")
 initial_extensions = [
 	"jishaku",
 	"cogs._utility",
-	"cogs.levelling",
 	"cogs._admin",
+	"cogs.levelling",
+	"cogs.economy",
 	"cogs.starboard"
 ]
 

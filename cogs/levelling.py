@@ -111,7 +111,7 @@ class Levelling(commands.Cog):
 
 				db.write(data)
 	
-	group = app_commands.Group(name="levels", description="Levelling commands")
+	group = app_commands.Group(name="levels", description="Levelling commands: level up as you chat")
 
 	@group.command(name="rank")
 	@app_commands.describe(

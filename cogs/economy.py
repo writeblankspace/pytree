@@ -12,6 +12,7 @@ class Economy(commands.Cog):
 	group = app_commands.Group(name="economy", description=f"Economy commands: earn coins, spend coins, and more")
 
 	# some of the economy commands will be in levelling.py
+	# levelling up gives you some $$$
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))

@@ -95,16 +95,21 @@ class Levelling(commands.Cog):
 				# check stuff first to avoid errors
 				db.exists([guild, author, "xp"], True, 0)
 				db.exists([guild, author, "$$$"], True, 0)
+				db.exists([guild, author, "equipped"], True, [])
 				data = db.read()
 				
 
 				nextlevel = self.find_next_level(data[guild][author]["xp"])
+				equipped = data[guild][author]["equipped"]
+				xp = data[guild][author]["xp"]
 
 				xp_needed = nextlevel.xp_needed
 				currentlevel = nextlevel.currentlevel
 
+				multi = calc_multi(equipped, xp).xp_multi
+
 				randxp = random.randint(15, 40)
-				data[guild][author]["xp"] += randxp
+				data[guild][author]["xp"] += randxp * multi
 
 				if data[guild][author]["xp"] > xp_needed:
 					currentlevel += 1

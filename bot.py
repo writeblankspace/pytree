@@ -32,7 +32,7 @@ initial_extensions = [
 # rich presence
 activity = discord.Activity(
 	# TODO change the status every so often
-	name="Panini suffer",
+	name="people ghost me",
 	type=discord.ActivityType.watching
 )
 

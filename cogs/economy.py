@@ -1,3 +1,4 @@
+from dataclasses import MISSING
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -16,6 +17,102 @@ class Economy(commands.Cog):
 	# some of the economy commands will be in other cogs
 	# levels: levelling up gives you some $$$
 	# admin: archivemonth also removes equipped products
+
+	class InventoryDropdown(discord.ui.Select):
+		def __init__(self, equipped: bool, user: discord.User, inventorylist: list, ephemeral: bool):
+			self.equipped = equipped # 1 for equipped items, 2 for inventory items
+			self.user = user
+			self.ephemeral = ephemeral
+			# inventorylist is a list of items in the inventory
+			# make it a dict {"name": amount}
+			self.items_with_count = {}
+			for item in inventorylist:
+				if item in self.items_with_count:
+					self.items_with_count[item] += 1
+				else:
+					self.items_with_count[item] = 1
+
+			# {"item": count}
+			# Set the options that will be presented inside the dropdown
+			options = []
+			for item in self.items_with_count.keys():
+				count = self.items_with_count[item]
+				if count == 1:
+					count = ""
+				else:
+					count = f"(x{count}) "
+
+				description = f"{count}{shopitems[item]['description']}"
+				# only get the first 100 characters of the description
+				if len(description) > 100:
+					description = description[:97] + "..."
+
+				options.append(
+					discord.SelectOption(
+						label = item,
+						description = description
+					)
+				)
+			
+			if equipped == True:
+				placeholder = "View equipped items..."
+			elif equipped == False:
+				placeholder = "View inventory items..."
+
+			super().__init__(
+				placeholder=placeholder,
+				min_values=1,
+				max_values=1,
+				options=options
+				)
+
+		async def callback(self, interaction: discord.Interaction):
+			# self.values = list of selected options
+			item = self.values[0]
+			# get the item's description
+			description = shopitems[item]["description"]
+			use = shopitems[item]["use"]
+			equip = shopitems[item]["equip"]
+
+			about = self.items_with_count[item]
+			if self.equipped == True:
+				about = " [Equipped]"
+			elif self.equipped == False:
+				if about == 1:
+					about = ""
+				else:
+					about = f" (x{about})"
+			
+			description = f"{description} {use}"
+			if equip and item != "python":
+				description = f"{description} Can be equipped until the monthly reset."
+			
+			embed = discord.Embed(
+				# capitalise item name
+				title = f"{item.capitalize()}{about}",
+				description = description,
+			)
+			embed.set_footer(
+				text = f"Owned by {self.user.name}#{self.user.discriminator}",
+			)
+			await interaction.response.send_message(
+				embed = embed,
+				ephemeral = self.ephemeral
+			)
+	
+	class InventoryDropdownView(discord.ui.View):
+		def __init__(self, InventoryDropdown, user: discord.User, inventorylist: list, equippedlist: list, ephemeral: bool):
+			super().__init__()
+
+			# Adds the dropdown to our view object.
+			if len(equippedlist) > 0:
+				self.add_item(
+					InventoryDropdown(True, user, equippedlist, ephemeral)
+				)
+			if len(inventorylist) > 0:
+				self.add_item(
+					InventoryDropdown(False, user, inventorylist, ephemeral)
+				)
 
 	@group.command(name="stats")
 	@app_commands.describe(
@@ -78,30 +175,299 @@ class Economy(commands.Cog):
 				f"xp multiplier: {xp_multi - 1}"
 			]
 			general = "\n".join(general)
-			
 
-			if len(equippedlist) == 0:
-				equippedlist.append("[There are no equipped items.]")
-			if len(inventorylist) == 0:
-				inventorylist.append("[This inventory is empty.]")
+			ogequipped = equippedlist.copy()
+			oginventory = inventorylist.copy()
 
 			embed = discord.Embed(
 				title = f"{member.name}'s stats",
 				description = general,
 			)
 
-			embed.add_field(
-				name = "Equipped items",
-				value = f"```{newline}{', '.join(equippedlist)}```",
-				inline = False
-			)
-			embed.add_field(
-				name = "Inventory",
-				value = f"```{newline}{', '.join(inventorylist)}```",
-				inline = False
-			)
-			await interaction.followup.send(embed=embed)
+			if len(inventorylist) == 0:
+				embed.set_footer(
+					text = "This user has no items. Items can be bought in the shop."
+				)
+			elif len(equippedlist) == 0:
+				embed.set_footer(
+					text = "This user has no equipped items. Items can be equipped by selecting them in the inventory."
+				)
+			
+			if len(equippedlist) == 0:
+				equippedlist.append("[There are no equipped items.]")
+			if len(inventorylist) == 0:
+				inventorylist.append("[This inventory is empty.]")
 
+			view = self.InventoryDropdownView(
+				self.InventoryDropdown,
+				user = member,
+				inventorylist = oginventory,
+				equippedlist = ogequipped,
+				ephemeral = ephemeral
+			)
+			await interaction.followup.send(embed=embed, view=view)
+
+	# leaderboard
+	class LeaderboardView(discord.ui.View):
+		"""
+		Buttons for the /leaderboard command """
+
+		def __init__(self, guild: discord.Guild, currency: str, users_per_page: int = 5):
+			# if you want to see top 1-10, then 1
+			# top 11-20, then 11
+			# and so on
+			self.leaderboard = []
+			self.leaderboard_index = 0
+			self.guild = guild
+			self.max_per_page = users_per_page
+			self.currency = currency
+
+			# generate the leaderboard
+			self.generate_leaderboard(self.guild)
+			# gonna dump stuff here
+			# ◁ ▷
+
+			super().__init__() 
+			# apparently I must do this or stuff breaks
+
+		def generate_leaderboard(self, guild: discord.Guild) -> list:
+			"""
+			Gives a list of the leaderboard.
+			
+			`guild` is the server to get the leaderboard for 
+			
+			Returns a list of dicts, each dict containing the member and $$$.
+
+			```py
+			[
+				{
+					"member": discord.User,
+					"$$$": int
+				}, {}, {} # etc
+			] 
+			```"""
+
+			# get the data
+			data = db.read()
+			guilddata = data[str(guild.id)]
+
+			for user in guilddata:
+				db.exists([str(guild.id), user, "$$$"], True, 0)
+				data = db.read()
+				# get the user's data
+				userdata = data[str(guild.id)][user]
+				# get the user's level
+				bal = userdata["$$$"]
+
+				# add the user to the leaderboard
+				self.leaderboard.append(
+					{
+						"member": guild.get_member(int(user)),
+						"$$$": bal
+					}
+				)
+			
+			# sort the users by most $$$ to least $$$
+			# I have no idea how to use lambda, but GitHub copilot said to use it
+			# I think this lambda basically returns the xp of the dict, x being the dict
+			self.leaderboard.sort(key=lambda x: x["$$$"], reverse=True)
+
+			return self.leaderboard
+
+		def get_leaderboard_embed(self, guild: discord.Guild, startindex: int) -> discord.Embed:
+			"""
+			Returns an embed of the leaderboard.
+
+			`guild` is the server to get the leaderboard for
+			
+			`startindex` is the index where the leaderboard should start, eg 0 would show top 1; 10 would show top 11 """
+
+			# list slicing to get the users
+			leaderboard = self.leaderboard[startindex:startindex + self.max_per_page]
+
+			# I love list slicing but I can never remember how
+
+			# make the description
+			description_list = []
+
+			rank = startindex + 1
+
+			for user in leaderboard:
+				# get the user's data
+				member = user["member"]
+				bal = user["$$$"]
+
+				# make the description
+				description_list.append(
+					f"**`#{rank}`** | {member.mention} | {bal} {self.currency}"
+				)
+
+				rank += 1
+			
+			description = "\n".join(description_list)
+
+
+			# make the embed
+			embed = discord.Embed(
+				title = f"{guild.name}'s leaderboard",
+				description = description,
+			)
+
+			return embed
+
+		
+		# Define the actual button
+		@discord.ui.button(
+			label='◄',
+			style=discord.ButtonStyle.secondary,
+			custom_id='left',
+			disabled=True
+			)
+		async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
+			# which part of the leaderboard to see
+			max_per_page = self.max_per_page
+			guild = interaction.guild
+
+			# eg your index is 10 and max_per_page is 10
+			# so make index -10 so 0
+			self.leaderboard_index -= max_per_page
+
+			# get the leaderboard
+			embed = self.get_leaderboard_embed(
+				guild = guild,
+				startindex = self.leaderboard_index
+			)
+
+			# update the buttons
+			all_buttons = self.children
+
+			leftbutton = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton = discord.utils.get(all_buttons, custom_id="right")
+
+			if self.leaderboard_index - max_per_page < 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+			
+			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
+
+			# Make sure to update the message with our updated selves
+			await interaction.response.edit_message(embed=embed, view=self)
+		
+		@discord.ui.button(
+			label='top users',
+			style=discord.ButtonStyle.secondary,
+			custom_id='top',
+			disabled=False
+			)
+		async def top(self, interaction: discord.Interaction, button: discord.ui.Button):
+			# which part of the leaderboard to see
+			max_per_page = self.max_per_page
+			guild = interaction.guild
+
+			# eg your index is 10 and max_per_page is 10
+			# so make index -10 so 0
+			self.leaderboard_index = 0
+
+			# get the leaderboard
+			embed = self.get_leaderboard_embed(
+				guild = guild,
+				startindex = self.leaderboard_index
+			)
+
+			# update the buttons
+			all_buttons = self.children
+
+			leftbutton = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton = discord.utils.get(all_buttons, custom_id="right")
+
+			if self.leaderboard_index - max_per_page < 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+			
+			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
+
+			# Make sure to update the message with our updated selves
+			await interaction.response.edit_message(embed=embed, view=self)
+		
+		# right button now
+		@discord.ui.button(
+			label='►',
+			style=discord.ButtonStyle.secondary,
+			custom_id='right',
+			disabled=False
+			)
+		async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
+			# which part of the leaderboard to see
+			max_per_page = self.max_per_page
+			guild = interaction.guild
+
+			# eg your index is 10 and max_per_page is 10
+			# so make index +10 so 20
+			self.leaderboard_index += max_per_page
+
+			# get the leaderboard
+			embed = self.get_leaderboard_embed(
+				guild = guild,
+				startindex = self.leaderboard_index
+			)
+
+			# update the buttons
+			all_buttons = self.children
+
+			leftbutton = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton = discord.utils.get(all_buttons, custom_id="right")
+
+			if self.leaderboard_index - max_per_page < 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+
+			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
+
+
+			# Make sure to update the message with our updated selves
+			await interaction.response.edit_message(embed=embed, view=self)
+
+	@group.command(name="leaderboard")
+	@app_commands.describe(
+		ephemeral = "whether or not others should see the bot's reply",
+		usersperpage = "the number of users to show per page"
+	)
+	async def leaderboard(self, interaction: discord.Interaction, ephemeral: bool = True, usersperpage: int = 5) -> None:
+		"""
+		Views the economy leaderboard. """
+		await interaction.response.defer(ephemeral=ephemeral)
+
+		lb = self.LeaderboardView(interaction.guild, self.currency, usersperpage)
+
+		embed = lb.get_leaderboard_embed(
+			guild = interaction.guild,
+			startindex = 0
+		)
+
+		# disable some buttons
+		all_buttons = lb.children
+
+		rightbutton = discord.utils.get(all_buttons, custom_id="right")
+
+		if lb.max_per_page > len(lb.leaderboard):
+			rightbutton.disabled = True
+
+		await interaction.followup.send(
+			embed = embed,
+			view = lb
+		)
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))

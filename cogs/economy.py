@@ -8,7 +8,7 @@ from db.db import db
 class Economy(commands.Cog):
 	def __init__(self, bot):
 		self.bot = bot
-		self.currency = "⭔"
+		self.currency = "⚇"
 		self.shopitems = shopitems
 	
 	group = app_commands.Group(name="economy", description=f"Economy commands: earn coins, spend coins, and more")
@@ -73,9 +73,9 @@ class Economy(commands.Cog):
 			newline = "\n"
 
 			general = [
-				f"balance:: {coins} {self.currency}",
-				f"hunting multiplier:: {kill_multi - 1}",
-				f"xp multiplier:: {xp_multi - 1}"
+				f"balance: {coins} {self.currency}",
+				f"hunting multiplier: {kill_multi - 1}",
+				f"xp multiplier: {xp_multi - 1}"
 			]
 			general = "\n".join(general)
 			
@@ -87,16 +87,18 @@ class Economy(commands.Cog):
 
 			embed = discord.Embed(
 				title = f"{member.name}'s stats",
-				description = f"```asciidoc{newline}{general}```",
+				description = general,
 			)
 
 			embed.add_field(
 				name = "Equipped items",
-				value = f"```{newline}{', '.join(equippedlist)}```"
+				value = f"```{newline}{', '.join(equippedlist)}```",
+				inline = False
 			)
 			embed.add_field(
 				name = "Inventory",
-				value = f"```{newline}{', '.join(inventorylist)}```"
+				value = f"```{newline}{', '.join(inventorylist)}```",
+				inline = False
 			)
 			await interaction.followup.send(embed=embed)
 

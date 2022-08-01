@@ -83,7 +83,7 @@ class Admin(commands.Cog):
 	async def archivemonth(self, interaction: Interaction, date: str) -> None:
 		"""
 		[RESTRICTED] Archives the members' trees to their forest """
-		await interaction.response.defer(ephemeral=True)
+		await interaction.response.defer(ephemeral=False)
 
 		# this command archives all the trees and puts it in the members' forests
 		# the trees are archived into the archive channel to make the image links permanent
@@ -145,7 +145,7 @@ class Admin(commands.Cog):
 			db.write(data)
 		
 		embed = discord.Embed(
-			title = f"Archived {date}",
+			title = f"Archived {date} for {len(keys)} members.",
 			color = templates.colours["success"]
 		)
 

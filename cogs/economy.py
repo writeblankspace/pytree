@@ -18,11 +18,98 @@ class Economy(commands.Cog):
 	# levels: levelling up gives you some $$$
 	# admin: archivemonth also removes equipped products
 
+	# inventory stuff
+	class ItemActions(discord.ui.View):
+		def __init__(
+			self, 
+			embed: discord.Embed,
+			owner: discord.User,
+			item: str,
+			equippable: bool = False,
+			sellable: bool = False
+		):
+			self.embed = embed
+			self.owner = owner
+			self.item = item
+			self.equippable = equippable
+			self.sellable = sellable
+
+			super().__init__()
+
+			# disable some buttons
+			self.disable_buttons()
+		
+		def disable_buttons(self):
+			all_buttons = self.children
+			equip = discord.utils.get(all_buttons, custom_id="equip")
+			# sell = discord.utils.get(all_buttons, custom_id="sell")
+			equip.disabled = not self.equippable
+			# sell.disabled = self.sellable
+
+		@discord.ui.button(custom_id="equip", label='equip', style=discord.ButtonStyle.green)
+		async def equip(self, interaction: discord.Interaction, button: discord.ui.Button):
+			# assuming that this is the inventory
+			# and that the item is equippable
+			guildid = str(interaction.guild.id)
+			ownerid = str(self.owner.id)
+
+			if interaction.user == self.owner:
+				# get the user's inventory
+				data = db.read()
+
+				# find the index of the item in the inventory
+				inventory = data[guildid][ownerid]["inventory"]
+				index = inventory.index(self.item)
+
+				# remove from the inventory
+				data[guildid][ownerid]["inventory"].pop(index)
+				# add to equipped
+				data[guildid][ownerid]["equipped"].append(self.item)
+
+				if self.item in data[guildid][ownerid]["inventory"]:
+					# it's still in there, so can still be equipped and sold
+					self.equippable = True
+					self.sellable = True
+				else:
+					self.equippable = False
+					# you can't sell a non-existent item already equipped
+					self.sellable = False
+				
+				self.disable_buttons()
+
+				# save the data
+				db.write(data)
+
+				# update the embed
+				title = self.embed.title
+
+				# find out how many of the item is in the inventory now
+				inventory = data[guildid][ownerid]["inventory"]
+				intcount = inventory.count(self.item)
+				if intcount > 0:
+					count = f" (x{intcount})"
+				else:
+					count = ""
+				title = title.replace(f" (x{intcount + 1})", count)
+				self.embed.__setattr__("title", title)
+
+
+				await interaction.response.edit_message(embed=self.embed, view=self)
+			else:
+				embed = discord.Embed(
+					title="Only the owner of this item can do this!",
+					color = templates.colours["fail"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
 	class InventoryDropdown(discord.ui.Select):
-		def __init__(self, equipped: bool, user: discord.User, inventorylist: list, ephemeral: bool):
+		def __init__(self, equipped: bool, user: discord.User, inventorylist: list, ephemeral: bool, ItemActions):
 			self.equipped = equipped # 1 for equipped items, 2 for inventory items
 			self.user = user
 			self.ephemeral = ephemeral
+			self.ItemActions = ItemActions
+
 			# inventorylist is a list of items in the inventory
 			# make it a dict {"name": amount}
 			self.items_with_count = {}
@@ -95,23 +182,46 @@ class Economy(commands.Cog):
 			embed.set_footer(
 				text = f"Owned by {self.user.name}#{self.user.discriminator}",
 			)
+
+			if not self.equipped and equip == True:
+				# not equipped yet / can be equipped
+				equippable = True
+			else:
+				# it's equipped already / can't be equipped
+				equippable = False
+			
+			if not self.equipped:
+				# can be sold
+				sellable = True
+			else:
+				sellable = False
+
+			view = self.ItemActions(
+				embed = embed,
+				owner = self.user,
+				item = item,
+				equippable = equippable,
+				sellable = sellable
+			)
+
 			await interaction.response.send_message(
 				embed = embed,
-				ephemeral = self.ephemeral
+				ephemeral = self.ephemeral,
+				view = view
 			)
 	
 	class InventoryDropdownView(discord.ui.View):
-		def __init__(self, InventoryDropdown, user: discord.User, inventorylist: list, equippedlist: list, ephemeral: bool):
+		def __init__(self, InventoryDropdown, user: discord.User, inventorylist: list, equippedlist: list, ephemeral: bool, ItemActions):
 			super().__init__()
 
 			# Adds the dropdown to our view object.
 			if len(equippedlist) > 0:
 				self.add_item(
-					InventoryDropdown(True, user, equippedlist, ephemeral)
+					InventoryDropdown(True, user, equippedlist, ephemeral, ItemActions)
 				)
 			if len(inventorylist) > 0:
 				self.add_item(
-					InventoryDropdown(False, user, inventorylist, ephemeral)
+					InventoryDropdown(False, user, inventorylist, ephemeral, ItemActions)
 				)
 
 	@group.command(name="stats")
@@ -186,7 +296,7 @@ class Economy(commands.Cog):
 
 			if len(inventorylist) == 0:
 				embed.set_footer(
-					text = "This user has no items. Items can be bought in the shop."
+					text = "This user's inventory is empty. Items can be bought in the shop."
 				)
 			elif len(equippedlist) == 0:
 				embed.set_footer(
@@ -203,7 +313,8 @@ class Economy(commands.Cog):
 				user = member,
 				inventorylist = oginventory,
 				equippedlist = ogequipped,
-				ephemeral = ephemeral
+				ephemeral = ephemeral,
+				ItemActions = self.ItemActions
 			)
 			await interaction.followup.send(embed=embed, view=view)
 

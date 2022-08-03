@@ -19,7 +19,7 @@ class Starboard(commands.Cog):
 		
 		data = db.read()
 
-		emoji = "🏹"
+		emoji = "📌"
 
 		star_channel = data[f"{guild}_settings"][f"starboard"]
 

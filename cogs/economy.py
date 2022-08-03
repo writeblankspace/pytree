@@ -22,17 +22,23 @@ class Economy(commands.Cog):
 	class ItemActions(discord.ui.View):
 		def __init__(
 			self, 
+			currency: str,
 			embed: discord.Embed,
 			owner: discord.User,
 			item: str,
 			equippable: bool = False,
 			sellable: bool = False
 		):
+			self.currency = currency
 			self.embed = embed
 			self.owner = owner
 			self.item = item
 			self.equippable = equippable
 			self.sellable = sellable
+
+			price = shopitems[self.item]["price"]
+			# get 65% of the price
+			self.price = int(price * 0.75)
 
 			super().__init__()
 
@@ -42,9 +48,10 @@ class Economy(commands.Cog):
 		def disable_buttons(self):
 			all_buttons = self.children
 			equip = discord.utils.get(all_buttons, custom_id="equip")
-			# sell = discord.utils.get(all_buttons, custom_id="sell")
+			sell = discord.utils.get(all_buttons, custom_id="sell")
+			sell.label = f"sell for {self.price} {self.currency}"
 			equip.disabled = not self.equippable
-			# sell.disabled = self.sellable
+			sell.disabled = not self.sellable
 
 		@discord.ui.button(custom_id="equip", label='equip', style=discord.ButtonStyle.green)
 		async def equip(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -82,16 +89,40 @@ class Economy(commands.Cog):
 
 				# update the embed
 				title = self.embed.title
+				description = self.embed.description
+
+				# log stuff in the description
+				# if ``` .* ``` is in the description, replace the inside with stuff
+				message = f"Equipped x1 of {self.item}"
+				if "```" in description:
+					# find the start and end of the code block
+					start = description.find("```")
+					end = description.find("```", start + 3)
+					# get the code block
+					logs = description[start + 3:end]
+					# replace the code block with the new stuff
+					description = description.replace(logs, logs + "\n" + message)
+				else:
+					description += "\n```\n" + f"{message}```"
 
 				# find out how many of the item is in the inventory now
 				inventory = data[guildid][ownerid]["inventory"]
-				intcount = inventory.count(self.item)
-				if intcount > 0:
-					count = f" (x{intcount})"
+				if self.item in inventory:
+					intcount = inventory.count(self.item)
+					if intcount > 0:
+						count = f" (x{intcount})"
+					else:
+						count = " [Not in the inventory]"
+					title = title.replace(f" (x{intcount + 1})", count)
 				else:
-					count = ""
-				title = title.replace(f" (x{intcount + 1})", count)
+					intcount = 0
+					count = " [Not in the inventory]"
+					if f" (x{intcount + 1})" in title:
+						title = title.replace(f" (x{intcount + 1})", count)
+					else:
+						title += count
 				self.embed.__setattr__("title", title)
+				self.embed.__setattr__("description", description)
 
 
 				await interaction.response.edit_message(embed=self.embed, view=self)
@@ -102,9 +133,93 @@ class Economy(commands.Cog):
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 
+		@discord.ui.button(custom_id="sell", label='sell', style=discord.ButtonStyle.red)
+		async def sell(self, interaction: discord.Interaction, button: discord.ui.Button):
+			# assuming that this is the inventory
+			# and that the item is equippable
+			guildid = str(interaction.guild.id)
+			ownerid = str(self.owner.id)
+
+			if interaction.user == self.owner:
+				# get the user's inventory
+				data = db.read()
+
+				# find the index of the item in the inventory
+				inventory = data[guildid][ownerid]["inventory"]
+				index = inventory.index(self.item)
+
+				# remove from the inventory
+				data[guildid][ownerid]["inventory"].pop(index)
+				# instead of equipping, sell the item
+				price = self.price
+				# add to the user's balance
+				data[guildid][ownerid]["$$$"] += price
+
+				if self.item in data[guildid][ownerid]["inventory"]:
+					# it's still in there, so can still be equipped and sold
+					if self.equippable != True:
+						self.equippable = True
+					if self.sellable != False:
+						self.sellable = True
+				else:
+					self.equippable = False
+					# you can't sell a non-existent item already equipped
+					self.sellable = False
+				
+				self.disable_buttons()
+
+				# save the data
+				db.write(data)
+
+				# update the embed
+				title = self.embed.title
+				description = self.embed.description
+
+				# log stuff in the description
+				# if ``` .* ``` is in the description, replace the inside with stuff
+				message = f"Sold x1 of {self.item} for {price} {self.currency}"
+				if "```" in description:
+					# find the start and end of the code block
+					start = description.find("```")
+					end = description.find("```", start + 3)
+					# get the code block
+					logs = description[start + 3:end]
+					# replace the code block with the new stuff
+					description = description.replace(logs, logs + "\n" + message)
+				else:
+					description += "\n```\n" + f"{message}```"
+
+				# find out how many of the item is in the inventory now
+				inventory = data[guildid][ownerid]["inventory"]
+				if self.item in inventory:
+					intcount = inventory.count(self.item)
+					if intcount > 0:
+						count = f" (x{intcount})"
+					else:
+						count = " [Not in the inventory]"
+					title = title.replace(f" (x{intcount + 1})", count)
+				else:
+					intcount = 0
+					count = " [Not in the inventory]"
+					if f" (x{intcount + 1})" in title:
+						title = title.replace(f" (x{intcount + 1})", count)
+					else:
+						title += count
+				self.embed.__setattr__("title", title)
+				self.embed.__setattr__("description", description)
+
+
+				await interaction.response.edit_message(embed=self.embed, view=self)
+			else:
+				embed = discord.Embed(
+					title="Only the owner of this item can do this!",
+					color = templates.colours["fail"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
 
 	class InventoryDropdown(discord.ui.Select):
-		def __init__(self, equipped: bool, user: discord.User, inventorylist: list, ephemeral: bool, ItemActions):
+		def __init__(self, currency: str, equipped: bool, user: discord.User, inventorylist: list, ephemeral: bool, ItemActions):
+			self.currency = currency
 			self.equipped = equipped # 1 for equipped items, 2 for inventory items
 			self.user = user
 			self.ephemeral = ephemeral
@@ -163,7 +278,10 @@ class Economy(commands.Cog):
 
 			about = self.items_with_count[item]
 			if self.equipped == True:
-				about = " [Equipped]"
+				if about == 1:
+					about = " [Equipped]"
+				else:
+					about = f" [Equipped x{about}]"
 			elif self.equipped == False:
 				if about == 1:
 					about = ""
@@ -197,6 +315,7 @@ class Economy(commands.Cog):
 				sellable = False
 
 			view = self.ItemActions(
+				currency = self.currency,
 				embed = embed,
 				owner = self.user,
 				item = item,
@@ -204,24 +323,23 @@ class Economy(commands.Cog):
 				sellable = sellable
 			)
 
-			await interaction.response.send_message(
+			await interaction.response.edit_message(
 				embed = embed,
-				ephemeral = self.ephemeral,
 				view = view
 			)
 	
 	class InventoryDropdownView(discord.ui.View):
-		def __init__(self, InventoryDropdown, user: discord.User, inventorylist: list, equippedlist: list, ephemeral: bool, ItemActions):
+		def __init__(self, InventoryDropdown, currency: str, user: discord.User, inventorylist: list, equippedlist: list, ephemeral: bool, ItemActions):
 			super().__init__()
 
 			# Adds the dropdown to our view object.
 			if len(equippedlist) > 0:
 				self.add_item(
-					InventoryDropdown(True, user, equippedlist, ephemeral, ItemActions)
+					InventoryDropdown(currency, True, user, equippedlist, ephemeral, ItemActions)
 				)
 			if len(inventorylist) > 0:
 				self.add_item(
-					InventoryDropdown(False, user, inventorylist, ephemeral, ItemActions)
+					InventoryDropdown(currency, False, user, inventorylist, ephemeral, ItemActions)
 				)
 
 	@group.command(name="stats")
@@ -310,6 +428,7 @@ class Economy(commands.Cog):
 
 			view = self.InventoryDropdownView(
 				self.InventoryDropdown,
+				currency = self.currency,
 				user = member,
 				inventorylist = oginventory,
 				equippedlist = ogequipped,

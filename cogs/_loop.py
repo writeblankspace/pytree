@@ -25,7 +25,7 @@ class Loops(commands.Cog):
 
 		# check if time is in reminders
 		if time in reminders.keys():
-			await channel.send(f"**{time}** {self.mention}" + "\n" + reminders[time])
+			await channel.send(f"{reminders[time]}")
 	
 	@timechecker.before_loop
 	async def before_timechecker(self):

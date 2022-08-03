@@ -1,6 +1,7 @@
 # my stuff
 .env
-database.json
+*database.json
+*reminders.json
 .vscode
 
 # hide patterns

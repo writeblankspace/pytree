@@ -5,7 +5,6 @@ import json
 class Loops(commands.Cog):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
-		self.channel = bot.get_channel(1004294903536291870)
 		self.mention = "<@&802815961979420732>"
 		self.timechecker.start()
 
@@ -19,12 +18,14 @@ class Loops(commands.Cog):
 		minute = current_datetime.minute
 		time = f"{hour}:{minute}"
 
+		channel = self.bot.get_channel(1004294903536291870)
+
 		with open("f/stuff/reminders.json", "r") as f:
 			reminders = json.load(f)
 
 		# check if time is in reminders
-		if time in reminders.keys():
-			await self.channel.send(f"**{time}** {self.mention}" + "\n" + reminders[time])
+		#if time in reminders.keys():
+		await channel.send(f"**{time}** {self.mention}" + "\n" + reminders[time])
 	
 	@timechecker.before_loop
 	async def before_timechecker(self):

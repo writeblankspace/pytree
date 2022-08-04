@@ -113,7 +113,7 @@ class Levelling(commands.Cog):
 
 				if data[guild][author]["xp"] > xp_needed:
 					currentlevel += 1
-					data[guild][author]["$$$"] += currentlevel * 20
+					data[guild][author]["$$$"] += currentlevel * 5
 					await message.reply(f"{message.author.mention} has leveled up to level {currentlevel}!")
 
 				db.write(data)

@@ -141,6 +141,8 @@ class Admin(commands.Cog):
 
 			# reset the user's xp
 			data[guild][userid]["xp"] = 0
+			# unequip everything
+			data[guild][userid]["equipped"] = []
 
 			db.write(data)
 		

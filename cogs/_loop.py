@@ -1,6 +1,9 @@
 from discord.ext import tasks, commands
 from datetime import datetime
+import discord
 import json
+from db.db import db
+import random
 
 class Loops(commands.Cog):
 	def __init__(self, bot: commands.Bot):
@@ -13,6 +16,24 @@ class Loops(commands.Cog):
 
 	@tasks.loop(seconds=60.0)
 	async def timechecker(self):
+		# change status
+		data = db.read()
+		statuslist = data["status"]
+		if len(statuslist) != 0:
+			# pick random from statuslist
+			statusname = random.choice(statuslist)
+
+			# rich presence
+			activity = discord.Activity(
+				# TODO change the status every so often
+				name=statusname,
+				type=discord.ActivityType.watching
+			)
+		else:
+			activity = None
+		await self.bot.change_presence(activity=activity)
+
+		# reminders
 		current_datetime = datetime.now()
 		hour = current_datetime.hour
 		minute = current_datetime.minute

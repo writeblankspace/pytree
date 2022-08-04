@@ -32,13 +32,6 @@ initial_extensions = [
 	"cogs.starboard"
 ]
 
-# rich presence
-activity = discord.Activity(
-	# TODO change the status every so often
-	name="people ghost me",
-	type=discord.ActivityType.watching
-)
-
 # Discord Intents settings
 intents = discord.Intents.default()
 intents.members = True
@@ -47,7 +40,6 @@ intents.message_content = True
 
 bot = commands.Bot(
 	command_prefix=["/"],
-	activity=activity,
 	status=discord.Status.idle,
 	afk=False,
 	intents=intents,

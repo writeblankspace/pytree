@@ -721,7 +721,7 @@ class Economy(commands.Cog):
 
 				options.append(
 					discord.SelectOption(
-						label = name.capitalize(),
+						label = name,
 						description = description
 					)
 				)
@@ -740,7 +740,7 @@ class Economy(commands.Cog):
 			# Select object, and the values attribute gets a list of the user's
 			# selected options. We only want the first one.
 			item = self.values[0]
-			itemdict = shopitems[item.lower()]
+			itemdict = shopitems[item]
 
 			name = itemdict["name"]
 			description = itemdict["description"]

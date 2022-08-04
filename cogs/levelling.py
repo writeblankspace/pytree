@@ -540,9 +540,8 @@ class Levelling(commands.Cog):
 			# get the selected tree
 			treekey = self.values[0]
 			embed = self.show_tree(treekey)
-			await interaction.response.send_message(
-				embed = embed,
-				ephemeral = self.ephemeral
+			await interaction.response.edit_message(
+				embed = embed
 			)
 	
 	class ForestDropdownView(discord.ui.View):

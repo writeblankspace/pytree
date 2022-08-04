@@ -10,7 +10,9 @@ from f.templates import templates
 import random
 import typing
 import logging
+from colorama import Fore, Back, Style, init
 
+init(autoreset=True)
 logging.basicConfig(level=logging.INFO)
 
 
@@ -60,8 +62,11 @@ async def on_ready():
 	# print the bot's status
 	channel = bot.get_channel(893372556848005180)
 	randcode = random.randint(1000000, 9999999)
-	print(f'{bot.user} has connected to Discord! [{randcode}]')
-	print(f'Successfully logged in and booted...!')
+	b = Style.BRIGHT
+	g = Fore.GREEN
+	w = Fore.WHITE
+	print(f'{b}{g}{bot.user}{w} has connected to Discord! [{randcode}]')
+	print(f'{b}Successfully logged in and booted...!')
 
 	embed = discord.Embed(
 		title=f"Connected!",
@@ -80,7 +85,7 @@ async def main():
 		# load extensions
 		for extension in initial_extensions:
 			await bot.load_extension(extension)
-			print(f"📥 {extension}")
+			print(f"{Style.BRIGHT}📥 {extension}")
 		# start the bot
 		await bot.start(TOKEN)
 

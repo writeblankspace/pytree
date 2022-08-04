@@ -7,7 +7,7 @@ from f.__index__ import *
 from db.db import db
 
 class Economy(commands.Cog):
-	def __init__(self, bot):
+	def __init__(self, bot: commands.Bot):
 		self.bot = bot
 		self.currency = "⚇"
 		self.shopitems = shopitems
@@ -698,6 +698,189 @@ class Economy(commands.Cog):
 			embed = embed,
 			view = lb
 		)
+
+	# shop
+	class ShopDrop(discord.ui.Select):
+		def __init__(self, currency: str):
+			self.currency = currency
+			itemkeys = shopitems.keys()
+			# sort keys by price
+			itemkeys = sorted(itemkeys, key=lambda x: shopitems[x]['price'])
+
+			options = []
+
+			for itemkey in itemkeys:
+				name = shopitems[itemkey]['name']
+				description = shopitems[itemkey]['description']
+				price = f"{shopitems[itemkey]['price']} {self.currency}"
+
+				description = f"[{price}] {description}"
+				# only get the first 100 characters of the description
+				if len(description) > 100:
+					description = description[:97] + "..."
+
+				options.append(
+					discord.SelectOption(
+						label = name.capitalize(),
+						description = description
+					)
+				)
+			
+			super().__init__(
+				placeholder='View shop items...',
+				min_values=1,
+				max_values=1,
+				options=options
+			)
+		
+
+		async def callback(self, interaction: discord.Interaction):
+			# Use the interaction object to send a response message containing
+			# the user's favourite colour or choice. The self object refers to the
+			# Select object, and the values attribute gets a list of the user's
+			# selected options. We only want the first one.
+			item = self.values[0]
+			itemdict = shopitems[item.lower()]
+
+			name = itemdict["name"]
+			description = itemdict["description"]
+			use = itemdict["use"]
+			price = itemdict["price"]
+			kill_multi = itemdict.get("kill_multi")
+			xp_multi = itemdict.get("xp_multi")
+			equip = itemdict["equip"]
+
+			description = f"{description} {use}"
+			if equip:
+				description = f"{description} Can be equipped for effects."
+
+			embed = discord.Embed(
+				title = f"{name.capitalize()} [{price} {self.currency}]",
+				description = description
+			)
+			
+			view = self.view
+			view.shopitem = item.lower()
+			all_buttons = view.children
+			buybutton = discord.utils.get(all_buttons, custom_id="buy")
+			balancebutton = discord.utils.get(all_buttons, custom_id="balance")
+			if buybutton == None:
+				view.add_item(view.buy)
+			if balancebutton == None:
+				view.add_item(view.balance)
+			# get it again
+			all_buttons = view.children
+			buybutton = discord.utils.get(all_buttons, custom_id="buy")
+			buybutton.label = f"buy this item for {price} {self.currency}"
+
+			await interaction.response.edit_message(embed=embed, view=view)
+
+	class ShopDropView(discord.ui.View):
+		def __init__(self, ShopDrop, currency: str):
+			super().__init__()
+
+			# Adds the dropdown to our view object.
+			self.currency = currency
+			self.shopitem = None
+			self.add_item(ShopDrop(currency))
+
+			# remove the buy button
+			all_buttons = self.children
+			buybutton = discord.utils.get(all_buttons, custom_id="buy")
+			balancebutton = discord.utils.get(all_buttons, custom_id="balance")
+			self.remove_item(buybutton)
+			self.remove_item(balancebutton)
+
+		@discord.ui.button(label='buy', style=discord.ButtonStyle.primary, custom_id="buy", row=2)
+		async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
+			guildid = str(interaction.guild.id)
+			userid = str(interaction.user.id)
+			itemdict = shopitems[self.shopitem]
+
+			price = itemdict["price"]
+
+			data = db.read()
+
+			cash = data[guildid][userid]["$$$"]
+			
+			if cash >= price:
+				# remove the money and add the item
+				data[guildid][userid]["$$$"] -= price
+				data[guildid][userid]["inventory"].append(self.shopitem)
+				db.write(data)
+
+				embed = discord.Embed(
+					title = f"You bought x1 of {self.shopitem}",
+					description = f"You now have {data[guildid][userid]['$$$']} {self.currency}",
+					color = templates.colours["success"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+			else:
+				embed = discord.Embed(
+					title = f"You don't have enough money to buy that.",
+					description = "\n".join([f"You only have {cash} {self.currency}.",
+						f"You'll need {price - cash} more to buy it."]),
+					color = templates.colours["fail"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+
+		@discord.ui.button(label='view my stats', style=discord.ButtonStyle.secondary, custom_id="balance", row=2)
+		async def balance(self, interaction: discord.Interaction, button: discord.ui.Button):
+			guildid = str(interaction.guild.id)
+			userid = str(interaction.user.id)
+
+			data = db.read()
+			balance = data[guildid][userid]["$$$"]
+
+			itemdict = shopitems[self.shopitem]
+			price = itemdict["price"]
+
+			if balance >= price:
+				colour = templates.colours["success"]
+			else:
+				colour = templates.colours["fail"]
+			
+			# how many of this item do you have?
+			inventory = data[guildid][userid]["inventory"]
+			count = inventory.count(self.shopitem)
+
+			embed = discord.Embed(
+				title = f"You have {balance} {self.currency}",
+				description = "\n".join([
+					f"If you buy this item, you'll have **{balance - price} {self.currency}** left.",
+					f"You have **{count}** of this item ({self.shopitem}) in your inventory."
+					]),
+				color = colour
+			)
+
+			await interaction.response.send_message(embed=embed, ephemeral=True)
+	
+	@group.command(name="shop")
+	@app_commands.describe(
+		ephemeral = "whether or not others should see the bot's reply",
+	)
+	async def shop(self, interaction: discord.Interaction, ephemeral: bool = True) -> None:
+		"""
+		Views the shop and its items."""
+		await interaction.response.defer(ephemeral=ephemeral)
+
+		# random from shopitems keys
+		shopitems_keys = list(shopitems.keys())
+		random_key = random.choice(shopitems_keys)
+
+		feature = shopitems[random_key]
+		name = feature["name"].capitalize()
+		description = feature["description"]
+		price = feature["price"]
+
+		embed = discord.Embed(
+			title = f"{self.bot.user.name} Shop",
+			description = f"**{name}:** {description} For {price} {self.currency} only!",
+		)
+
+		view = self.ShopDropView(self.ShopDrop, self.currency)
+
+		await interaction.followup.send(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))

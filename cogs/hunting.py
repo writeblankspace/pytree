@@ -190,6 +190,10 @@ class Hunting(commands.Cog):
 		for i in range(attempts):
 			if random.randint(1, 3) == 1:
 				successes += 1
+		
+		# no more than {bugs} that can be killed (duh)
+		if successes > bugs:
+			successes = bugs
 
 		money_reward = int(successes / len(users)) * kill_multi
 		xp_reward = int((successes / len(users)) / 2) * kill_multi

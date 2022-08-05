@@ -63,6 +63,8 @@ class Hunting(commands.Cog):
 
 				self.embed.__setattr__("description", description)
 
+				db.write(data)
+
 				return Result(True, self.embed)
 			else:
 				# ITS NOT IN THERE WHY U CLICK THIS BUTTON THEN

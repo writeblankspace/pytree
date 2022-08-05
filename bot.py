@@ -29,7 +29,8 @@ initial_extensions = [
 	"cogs._loop",
 	"cogs.levelling",
 	"cogs.economy",
-	"cogs.starboard"
+	"cogs.starboard",
+	"cogs.hunting"
 ]
 
 # Discord Intents settings

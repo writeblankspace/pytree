@@ -8,7 +8,7 @@ from f.githubissues import make_github_issue
 import traceback
 
 class utility(commands.Cog):
-	def __init__(self, bot) -> None:
+	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
 
 	group = app_commands.Group(name="utility", description="Miscellaneous commands: various useful commands that don't fit anywhere else")
@@ -112,5 +112,5 @@ class utility(commands.Cog):
 		Creates an issue on GitHub. You can add suggestions and bug reports."""
 		await interaction.response.send_modal(self.Issue())
 
-async def setup(bot):
+async def setup(bot: commands.Bot):
     await bot.add_cog(utility(bot))

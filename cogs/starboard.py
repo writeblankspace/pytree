@@ -5,11 +5,11 @@ from db.db import db
 
 
 class Starboard(commands.Cog):
-	def __init__(self, bot):
+	def __init__(self, bot: commands.Bot):
 		self.bot = bot
 
 	@commands.Cog.listener()  # starboard
-	async def on_raw_reaction_add(self, ctx):
+	async def on_raw_reaction_add(self, ctx: discord.RawReactionActionEvent) -> None:
 		channel = self.bot.get_channel(ctx.channel_id)
 		guild = ctx.guild_id
 

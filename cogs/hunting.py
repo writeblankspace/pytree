@@ -142,7 +142,7 @@ class Hunting(commands.Cog):
 
 		embed = discord.Embed(
 			title = f"{user.name} started a bug hunt!",
-			description = f"There are {bugs} bugs in the area.",
+			description = f"There are **{bugs} bugs** in the area.",
 			color = templates.colours["draw"]
 		)
 
@@ -151,6 +151,8 @@ class Hunting(commands.Cog):
 		embed.set_footer(text = footertext)
 
 		await interaction.response.send_message(embed=embed)
+
+		db.write(data)
 
 		await asyncio.sleep(3)
 
@@ -179,6 +181,8 @@ class Hunting(commands.Cog):
 				"\nPlease wait while the results are calculated.",
 			color = templates.colours["draw"]
 		)
+
+		data = db.read()
 
 		await interaction.edit_original_message(view=None, embed=embed)
 

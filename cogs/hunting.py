@@ -217,6 +217,7 @@ class Hunting(commands.Cog):
 				f"There were {bugs} bugs in the area." + "\n" + \
 				f"Each user earned **{money_reward} {self.currency}** and **{xp_reward} xp.**" + "\n" + \
 				f"```{', '.join(usernames)}```",
+			color = templates.colours["success"]
 		)
 
 		await interaction.edit_original_message(view=None, embed=embed)

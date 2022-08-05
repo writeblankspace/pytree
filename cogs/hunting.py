@@ -135,6 +135,9 @@ class Hunting(commands.Cog):
 		bugs = random.choice(bug_amount) * kill_multi
 		bugs = int(bugs)
 
+		if bugs == 0:
+			bugs = 1
+
 		embed = discord.Embed(
 			title = f"{user.name} started a bug hunt!",
 			description = f"There are {bugs} bugs in the area.",

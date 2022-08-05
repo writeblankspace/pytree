@@ -176,7 +176,7 @@ class Hunting(commands.Cog):
 		await asyncio.sleep(15)
 
 		embed = discord.Embed(
-			title = f"{user.name}'s hunt ended!'",
+			title = f"{user.name}'s hunt ended!",
 			description = f"There were **{bugs} bugs** in the area." + \
 				"\nPlease wait while the results are calculated.",
 			color = templates.colours["draw"]

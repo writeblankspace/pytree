@@ -212,7 +212,7 @@ class Hunting(commands.Cog):
 		bug_types = {
 			"bee": {"emoji": "🐝", "prize": 10, "plural": "bees"},
 			"lady beetle": {"emoji": "🐞", "prize": 7, "plural": "lady beetles"},
-			"ant": {"emoji": "🐜", "prize": 1}, "plural": "ants",
+			"ant": {"emoji": "🐜", "prize": 1, "plural": "ants"},
 			"fly": {"emoji": "🪰", "prize": 1, "plural": "flies"},
 			"mosquito": {"emoji": "🦟", "prize": 2, "plural": "mosquitoes"},
 			"cockroach": {"emoji": "🪳", "prize": 5, "plural": "cockroaches"},

@@ -240,9 +240,9 @@ class Hunting(commands.Cog):
 		for bug_type in bug_types_caught:
 			count = bug_types_caught.count(bug_type)
 			emoji = bug_types[bug_type]["emoji"]
-			bug_type = bug_types[bug_type]["plural"]
+			bug_name = bug_types[bug_type]["plural"]
 			reward = bug_types[bug_type]["prize"] * count
-			bug_types_caught_str.append(f"{emoji} {bug_type}:: {count} [+{reward} {self.currency}]")
+			bug_types_caught_str.append(f"{emoji} {bug_name}:: {count} [+{reward} {self.currency}]")
 
 		bug_types_caught_str = "\n".join(bug_types_caught_str)
 

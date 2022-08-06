@@ -210,14 +210,14 @@ class Hunting(commands.Cog):
 		# 🐝🐞🐜🪰🦟🪳🪲🕷️
 		# :bee::lady_beetle::ant::fly::mosquito::cockroach::beetle::spider:
 		bug_types = {
-			"bee": {"emoji": "🐝", "prize": 10, "plural": "bees"},
-			"lady beetle": {"emoji": "🐞", "prize": 7, "plural": "lady beetles"},
-			"ant": {"emoji": "🐜", "prize": 1, "plural": "ants"},
-			"fly": {"emoji": "🪰", "prize": 1, "plural": "flies"},
-			"mosquito": {"emoji": "🦟", "prize": 2, "plural": "mosquitoes"},
-			"cockroach": {"emoji": "🪳", "prize": 5, "plural": "cockroaches"},
-			"beetle": {"emoji": "🪲", "prize": 6, "plural": "beetles"},
-			"spider": {"emoji": "🕷️", "prize": 10, "plural": "spiders"}
+			"bee": {"emoji": "🐝", "prize": 50, "plural": "bees"},
+			"lady beetle": {"emoji": "🐞", "prize": 77, "plural": "lady beetles"},
+			"ant": {"emoji": "🐜", "prize": 10, "plural": "ants"},
+			"fly": {"emoji": "🪰", "prize": 10, "plural": "flies"},
+			"mosquito": {"emoji": "🦟", "prize": 15, "plural": "mosquitoes"},
+			"cockroach": {"emoji": "🪳", "prize": 20, "plural": "cockroaches"},
+			"beetle": {"emoji": "🪲", "prize": 30, "plural": "beetles"},
+			"spider": {"emoji": "🕷️", "prize": 30, "plural": "spiders"}
 		}
 		bug_types_rarity = [
 			"ant", "ant", "ant",

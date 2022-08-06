@@ -276,7 +276,7 @@ class Hunting(commands.Cog):
 			title=f"{user.name}'s hunt results:",
 			description=f"**{successes} bugs** were killed out of {attempts} attempts." + "\n" +
 			f"There were {bugs} bugs in the area." + "\n" +
-			f"Each user earned **{money_reward} {self.currency}** and **{xp_reward} xp.**",
+			f"Each user earned **{money_reward} {self.currency}** and **{xp_reward} xp** (multipliers included).",
 			color=templates.colours["success"]
 		)
 

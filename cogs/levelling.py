@@ -109,6 +109,10 @@ class Levelling(commands.Cog):
 				multi = calc_multi(equipped, xp).xp_multi
 
 				randxp = random.randint(15, 40)
+				# 13 easter egg
+				if data[guild][author]["xp"] % 13 == 0:
+					randxp += 13
+				# xp gained
 				data[guild][author]["xp"] += randxp * multi
 
 				if data[guild][author]["xp"] > xp_needed:

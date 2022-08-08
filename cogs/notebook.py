@@ -8,6 +8,13 @@ import traceback
 class Notebook(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
+		self.intropage = "\n".join([
+			"Welcome to your new notebook! You can use this to keep track of your personal notes.\n",
+			"`/notebook open` lets you open your notebook. You can edit your notes by clicking on the buttons below. You can also delete pages and add new ones.\n",
+			"`/notebook note` is for quick note-taking. All quick notes go into the first page of your notebook.\n",
+			"**Quick notes:**",
+			"- try it out by typing `/notebook note`"
+		])
 	
 	group = app_commands.Group(name="notebook", description="Notebook commands: view and edit your personal notes.")
 
@@ -226,15 +233,7 @@ class Notebook(commands.Cog):
 		guildid = str(interaction.guild.id)
 		userid = str(user.id)
 
-		intropage = "\n".join([
-			"Welcome to your new notebook! You can use this to keep track of your personal notes.\n",
-			"`/notebook open` lets you open your notebook. You can edit your notes by clicking on the buttons below. You can also delete pages and add new ones.\n",
-			"`/notebook note` is for quick note-taking. All quick notes go into the first page of your notebook.\n",
-			"**Quick notes:**",
-			"- try it out by typing `/notebook note`"
-		])
-
-		db.exists([guildid, userid, "notebook"], True, [intropage])
+		db.exists([guildid, userid, "notebook"], True, [self.intropage])
 		data = db.read()
 
 		notebook: list = data[guildid][userid]["notebook"] # returns a list
@@ -260,6 +259,76 @@ class Notebook(commands.Cog):
 
 		await interaction.followup.send(embed=embed, view=view)
 
+	class QuicknoteModal(discord.ui.Modal, title="Quick note"):
+		def __init__(self, interaction: discord.Interaction):
+			self.index = 0
+			self.interaction = interaction
+		
+			data = db.read()
+			guildid = str(interaction.guild.id)
+			userid = str(interaction.user.id)
+			self.content = data[guildid][userid]["notebook"][0]
+
+			super().__init__()
+
+
+		notes = discord.ui.TextInput(
+			label="Notes",
+			style=discord.TextStyle.short,
+			placeholder="Type anything here...",
+			required=False,
+			max_length=100,
+		)
+
+		async def on_submit(self, interaction: discord.Interaction):
+			data = db.read()
+			guildid = str(interaction.guild.id)
+			userid = str(interaction.user.id)
+
+			result = data[guildid][userid]["notebook"][self.index] + "\n" + self.notes.value
+
+			if len(result) > 2000:
+				embed = discord.Embed(
+					title = "Your note is too long",
+					description = "```\n" + f"{self.notes.value}```",
+					color = templates.colours["fail"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+			else:
+				data[guildid][userid]["notebook"][self.index] = result
+
+				db.write(data)
+
+				embed = discord.Embed(
+					title = "Quick note saved!",
+					description = "```\n" + f"{self.notes.value}```",
+					color = templates.colours["success"]
+				)
+
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+
+		async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+			embed = discord.Embed(
+				title = "Something went wrong...", 
+				description = f"Please ping the developer.",
+				colour = templates.colours["fail"]
+			)
+			await interaction.response.send_message(embed=embed, ephemeral=True)
+
+			# Make sure we know what the error actually is
+			traceback.print_tb(error.__traceback__)
+
+	@group.command(name="quick")
+	async def quick(self, interaction: discord.Interaction):
+		"""
+		Creates a quick note on the first page of your notebook. """
+		user = interaction.user
+		guildid = str(interaction.guild.id)
+		userid = str(user.id)
+
+		db.exists([guildid, userid, "notebook"], True, [self.intropage])
+
+		await interaction.response.send_modal(self.QuicknoteModal(interaction))
 
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Notebook(bot))

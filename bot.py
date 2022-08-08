@@ -41,7 +41,7 @@ intents.presences = True
 intents.message_content = True
 
 bot = commands.Bot(
-	command_prefix=["/"],
+	command_prefix=["$"],
 	status=discord.Status.idle,
 	afk=False,
 	intents=intents,

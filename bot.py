@@ -30,6 +30,7 @@ initial_extensions = [
 	"cogs.levelling",
 	"cogs.economy",
 	"cogs.starboard",
+	"cogs.notebook",
 	"cogs.hunting"
 ]
 

@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from db.db import db
 from f.__index__ import *
+import traceback
 
 class Notebook(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
@@ -10,13 +11,61 @@ class Notebook(commands.Cog):
 	
 	group = app_commands.Group(name="notebook", description="Notebook commands: view and edit your personal notes.", guild_ids=[802774740825276426])
 
+	class EditModal(discord.ui.Modal, title="Edit page"):
+		def __init__(self, interaction: discord.Interaction, index: int, embed: discord.Embed):
+			self.title = f"Edit page {index + 1}"
+
+			self.index = index
+			self.interaction = interaction
+			self.embed = embed
+		
+			data = db.read()
+			guildid = str(interaction.guild.id)
+			userid = str(interaction.user.id)
+			content = data[guildid][userid]["notebook"][index]
+
+			super().__init__(title=self.title)
+			self.notes.default = content
+
+
+		notes = discord.ui.TextInput(
+			label="Notes",
+			style=discord.TextStyle.long,
+			placeholder="Type anything here...",
+			required=False,
+			max_length=2000,
+		)
+
+		async def on_submit(self, interaction: discord.Interaction):
+			data = db.read()
+			guildid = str(interaction.guild.id)
+			userid = str(interaction.user.id)
+			data[guildid][userid]["notebook"][self.index] = self.notes.value
+
+			db.write(data)
+
+			self.embed.__setattr__("description", self.notes.value)
+
+			await interaction.response.edit_message(embed=self.embed)
+
+		async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+			embed = discord.Embed(
+				title = "Something went wrong...", 
+				description = f"Please ping the developer.",
+				colour = templates.colours["fail"]
+			)
+			await interaction.response.send_message(embed=embed, ephemeral=True)
+
+			# Make sure we know what the error actually is
+			traceback.print_tb(error.__traceback__)
 
 	class NBNav(discord.ui.View):
-		def __init__(self, interaction: discord.Interaction, index: int):
+		def __init__(self, interaction: discord.Interaction, index: int, modal):
 			self.interaction = interaction
 			self.user = interaction.user
 			self.guild = interaction.guild
 			self.index = index
+			self.modal = modal
 		
 			super().__init__()
 
@@ -78,6 +127,22 @@ class Notebook(commands.Cog):
 				self.disable_buttons()
 				await interaction.response.edit_message(embed=embed, view=self)
 		
+		
+		@discord.ui.button(label="edit page", style=discord.ButtonStyle.primary, custom_id="edit")
+		async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+			if interaction.user == self.user:
+				await interaction.response.send_modal(self.modal(
+					interaction = interaction,
+					index = self.index,
+					embed = self.get_embed(self.index)
+				))
+			else:
+				embed = discord.Embed(
+					title = "Only the owner of the notebook can do this.",
+					color = templates.colours["fail"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+		
 		@discord.ui.button(label="►", style=discord.ButtonStyle.secondary, custom_id="right")
 		async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
 			if interaction.user != self.user:
@@ -136,7 +201,7 @@ class Notebook(commands.Cog):
 			text = f"page {currentpage + 1} of {len(notebook)}"
 		)
 
-		view = self.NBNav(interaction, currentpage)
+		view = self.NBNav(interaction, currentpage, self.EditModal)
 
 		await interaction.followup.send(embed=embed, view=view)
 

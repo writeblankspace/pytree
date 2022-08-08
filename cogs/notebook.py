@@ -149,22 +149,7 @@ class Notebook(commands.Cog):
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 		
-		@discord.ui.button(label="►", style=discord.ButtonStyle.secondary, custom_id="right")
-		async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
-			if interaction.user != self.user:
-				embed = discord.Embed(
-					title = "Only the owner of the notebook can do this.",
-					color = templates.colours["fail"]
-				)
-				await interaction.response.send_message(embed=embed, ephemeral=True)
-			else:
-				# assuming this button is active
-				self.index += 1
-				embed = self.get_embed(self.index)
-				self.disable_buttons()
-				await interaction.response.edit_message(embed=embed, view=self)
-		
-		@discord.ui.button(label="add a new page", style=discord.ButtonStyle.green, custom_id="new", row=2)
+		@discord.ui.button(label="add page", style=discord.ButtonStyle.green, custom_id="new")
 		async def new(self, interaction: discord.Interaction, button: discord.ui.Button):
 			if interaction.user != self.user:
 				embed = discord.Embed(
@@ -188,7 +173,7 @@ class Notebook(commands.Cog):
 				await interaction.response.edit_message(embed=embed, view=self)
 
 
-		@discord.ui.button(label="delete page", style=discord.ButtonStyle.red, custom_id="delete", row=2)
+		@discord.ui.button(label="delete page", style=discord.ButtonStyle.red, custom_id="delete")
 		async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
 			if interaction.user != self.user:
 				embed = discord.Embed(
@@ -219,6 +204,21 @@ class Notebook(commands.Cog):
 					self.disable_buttons()
 
 					await interaction.response.edit_message(embed=embed, view=self)
+
+		@discord.ui.button(label="►", style=discord.ButtonStyle.secondary, custom_id="right")
+		async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
+			if interaction.user != self.user:
+				embed = discord.Embed(
+					title = "Only the owner of the notebook can do this.",
+					color = templates.colours["fail"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+			else:
+				# assuming this button is active
+				self.index += 1
+				embed = self.get_embed(self.index)
+				self.disable_buttons()
+				await interaction.response.edit_message(embed=embed, view=self)
 
 	@group.command(name="open")
 	@app_commands.describe(

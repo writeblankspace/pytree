@@ -127,7 +127,6 @@ class Notebook(commands.Cog):
 				self.disable_buttons()
 				await interaction.response.edit_message(embed=embed, view=self)
 		
-		
 		@discord.ui.button(label="edit page", style=discord.ButtonStyle.primary, custom_id="edit")
 		async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
 			if interaction.user == self.user:
@@ -157,7 +156,41 @@ class Notebook(commands.Cog):
 				embed = self.get_embed(self.index)
 				self.disable_buttons()
 				await interaction.response.edit_message(embed=embed, view=self)
-			
+		
+
+		
+		@discord.ui.button(label="delete page", style=discord.ButtonStyle.red, custom_id="delete", row=2)
+		async def delete(self, interaction: discord.Interaction, button: discord.ui.Button):
+			if interaction.user != self.user:
+				embed = discord.Embed(
+					title = "Only the owner of the notebook can do this.",
+					color = templates.colours["fail"]
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+			else:
+				if len(self.notebook()) == 1:
+					embed = discord.Embed(
+						title = "Your notebook must have at least one page.",
+						color = templates.colours["fail"]
+					)
+					await interaction.response.send_message(embed=embed, ephemeral=True)
+				else:
+					data = db.read()
+					guildid = str(self.guild.id)
+					userid = str(self.user.id)
+
+					data[guildid][userid]["notebook"].pop(self.index)
+
+					db.write(data)
+
+					if self.index != 0:
+						self.index -= 1
+
+					embed = self.get_embed(self.index)
+					self.disable_buttons()
+
+					await interaction.response.edit_message(embed=embed, view=self)
+
 	@group.command(name="open")
 	@app_commands.describe(
 		index = "the index of the page you want to open",

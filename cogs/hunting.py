@@ -256,8 +256,8 @@ class Hunting(commands.Cog):
 			bug_rewards += bug_types[bug_type]["prize"]
 
 
-		money_reward = int(bug_rewards / len(users)) * kill_multi
-		xp_reward = int((bug_rewards / len(users)) / 2) * kill_multi
+		money_reward = int(bug_rewards / len(users))
+		xp_reward = int((bug_rewards / len(users)) / 2)
 
 		usernames = []
 

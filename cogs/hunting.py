@@ -225,7 +225,7 @@ class Hunting(commands.Cog):
 			"cockroach", "cockroach", "cockroach", "cockroach", "cockroach", 
 			"mosquito", "mosquito", "mosquito",
 			"bee", "bee",
-			"lady_beetle", "beetle", "beetle", "spider"
+			"lady beetle", "beetle", "beetle", "spider"
 		]
 
 		bug_types_caught = []
@@ -234,10 +234,10 @@ class Hunting(commands.Cog):
 			bug_types_caught.append(bug_type)
 
 		# return a list of all bug types in the bug_types_caught list
-		bug_types_caught = list(set(bug_types_caught))
+		unique_bug_types_caught = list(set(bug_types_caught))
 		bug_types_caught_str = []
 
-		for bug_type in bug_types_caught:
+		for bug_type in unique_bug_types_caught:
 			count = bug_types_caught.count(bug_type)
 			emoji = bug_types[bug_type]["emoji"]
 			bug_name = bug_types[bug_type]["plural"]
@@ -276,7 +276,7 @@ class Hunting(commands.Cog):
 			title=f"{user.name}'s hunt results:",
 			description=f"**{successes} bugs** were killed out of {attempts} attempts." + "\n" +
 			f"There were {bugs} bugs in the area." + "\n" +
-			f"Each user earned **{money_reward} {self.currency}** and **{xp_reward} xp** (multipliers included).",
+			f"Each user earned **{money_reward} {self.currency}** and **{xp_reward} xp**.",
 			color=templates.colours["success"]
 		)
 

@@ -8,14 +8,13 @@ import random
 class Loops(commands.Cog):
 	def __init__(self, bot: commands.Bot):
 		self.bot = bot
-		self.mention = "<@&802815961979420732>"
-		self.timechecker.start()
+		self.status.start()
 
 	def cog_unload(self):
-		self.timechecker.cancel()
+		self.status.cancel()
 
 	@tasks.loop(seconds=60.0)
-	async def timechecker(self):
+	async def status(self):
 		# change status
 		data = db.read()
 		statuslist = data["status"]
@@ -25,31 +24,15 @@ class Loops(commands.Cog):
 
 			# rich presence
 			activity = discord.Activity(
-				# TODO change the status every so often
 				name=statusname,
 				type=discord.ActivityType.watching
 			)
 		else:
 			activity = None
 		await self.bot.change_presence(activity=activity)
-
-		# reminders
-		current_datetime = datetime.now()
-		hour = current_datetime.hour
-		minute = current_datetime.minute
-		time = f"{hour}:{minute}"
-
-		channel = self.bot.get_channel(1004294903536291870)
-
-		with open("f/stuff/reminders.json", "r") as f:
-			reminders = json.load(f)
-
-		# check if time is in reminders
-		if time in reminders.keys():
-			await channel.send(f"{reminders[time]}")
 	
-	@timechecker.before_loop
-	async def before_timechecker(self):
+	@status.before_loop
+	async def before_status(self):
 		await self.bot.wait_until_ready()
 
 async def setup(bot: commands.Bot):

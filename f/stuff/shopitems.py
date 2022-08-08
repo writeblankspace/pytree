@@ -27,7 +27,7 @@ shopitems = {
 	"flypaper": {
 		"name": "flypaper",
 		"description": "Deadly sticky paper for flies.",
-		"use": "Kills up to 5 bugs when hunting. Lasts for the entire month when equipped.",
+		"use": "Kills up to 5 bugs when hunting. When equipped, allows 5 more bugs to be killed in one hunting session.",
 		"price": 100,
 		"kill_multi": 5,
 		"equip": True
@@ -55,7 +55,7 @@ shopitems = {
 	"python": {
 		"name": "python",
 		"description": "A mostly-friendly python to live in your tree.",
-		"use": "Kills up to 25 extra bugs when hunting, and occasionally gives xp boosts when chatting. This is a lifetime product.",
+		"use": "Allows 25 more bugs to be killed when hunting, and occasionally gives xp boosts when chatting. This is a lifetime product.",
 		"price": 1300,
 		"kill_multi": 25,
 		"xp_multi": 13,

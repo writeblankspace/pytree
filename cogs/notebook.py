@@ -9,7 +9,7 @@ class Notebook(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
 	
-	group = app_commands.Group(name="notebook", description="Notebook commands: view and edit your personal notes.", guild_ids=[802774740825276426])
+	group = app_commands.Group(name="notebook", description="Notebook commands: view and edit your personal notes.")
 
 	class EditModal(discord.ui.Modal, title="Edit page"):
 		def __init__(self, interaction: discord.Interaction, index: int, embed: discord.Embed):

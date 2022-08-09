@@ -53,7 +53,7 @@ class utility(commands.Cog):
 		"""
 		Creates a screenshot of the given url. """
 		await interaction.response.defer(ephemeral=True)
-		screenshot = f"https://image.thum.io/get/noanimate/{url}"
+		screenshot = f"https://image.thum.io/get/width/1200/noanimate/{url}"
 		await interaction.followup.send(f"**This may take a while to load.**\n{screenshot}")
 	
 	@screenshot.autocomplete("url")

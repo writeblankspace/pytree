@@ -175,7 +175,7 @@ class Hunting(commands.Cog):
 
 		view = self.BugHunt(user, kill_multi, embed)
 
-		await interaction.edit_original_message(view=view, embed=embed)
+		await interaction.edit_original_response(view=view, embed=embed)
 
 		await asyncio.sleep(15)
 
@@ -188,7 +188,7 @@ class Hunting(commands.Cog):
 
 		data = db.read()
 
-		await interaction.edit_original_message(view=None, embed=embed)
+		await interaction.edit_original_response(view=None, embed=embed)
 
 		await asyncio.sleep(3)
 
@@ -292,7 +292,7 @@ class Hunting(commands.Cog):
 			inline = True
 		)
 
-		await interaction.edit_original_message(view=None, embed=embed)
+		await interaction.edit_original_response(view=None, embed=embed)
 
 
 async def setup(bot: commands.Bot) -> None:

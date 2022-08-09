@@ -231,6 +231,8 @@ class utility(commands.Cog):
 			view.embed.__setattr__("description", "Message was not deleted.")
 			embed.__setattr__("colour", templates.colours["draw"])
 			await mymessage.edit(embed=view.embed, view=view)
+		await asyncio.sleep(3)
+		await mymessage.delete()
 
 
 async def setup(bot: commands.Bot):

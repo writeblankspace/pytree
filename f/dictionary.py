@@ -17,7 +17,11 @@ main_url = "https://od-api.oxforddictionaries.com"
 
 class Oxford_Search():
 	"""
-	Searches for a word in the Oxford Dictionary and parses it."""
+	Searches for a word in the Oxford Dictionary and parses it.
+	
+	`lemmas`: gives the root word of the word
+	`dictionary`: gives the derivatives, etymologies, definitions, examples, etc of the word
+	`thesaurus`: gives synonyms, antonyms, etc of the word"""
 	def __init__(self, word: str, lang: str = default_lang):
 		self.word = word
 		self.lang = lang
@@ -26,7 +30,7 @@ class Oxford_Search():
 		dictionary = self.oxford_dictionary()
 		thesaurus = self.oxford_thesaurus()
 
-		self.lemmas: dict = lemmas.dict
+		self.lemmas: dict = lemmas.dict 
 		self.dictionary: dict = dictionary.dict
 		self.thesaurus: dict = thesaurus.dict
 
@@ -44,15 +48,16 @@ class Oxford_Search():
 		r = requests.get(url, headers = {'app_id' : app_id, 'app_key' : app_key})
 
 		# r.json to dict
-		rjson: str = r.json()
-		rdict: dict = json.load(rjson)
+		rjson = r.json()
+		# rdict: dict = json.load(rjson)
 
-		returnstuff = object()
-		returnstuff.code = r.status_code
-		returnstuff.json = r.json()
-		returnstuff.dict = rdict
+		class Returnstuff():
+			def __init__(self):
+				self.code = r.status_code
+				self.json = r.json()
+				self.dict = rjson
 
-		return returnstuff
+		return Returnstuff()
 	
 	def oxford_dictionary(self):
 		word = self.word
@@ -64,15 +69,16 @@ class Oxford_Search():
 		r = requests.get(url, headers = {'app_id' : app_id, 'app_key' : app_key})
 
 		# r.json to dict
-		rjson: str = r.json()
-		rdict: dict = json.load(rjson)
+		rjson = r.json()
+		# rdict: dict = json.load(rjson)
 
-		returnstuff = object()
-		returnstuff.code = r.status_code
-		returnstuff.json = r.json()
-		returnstuff.dict = rdict
+		class Returnstuff():
+			def __init__(self):
+				self.code = r.status_code
+				self.json = r.json()
+				self.dict = rjson
 
-		return returnstuff
+		return Returnstuff()
 
 	def oxford_thesaurus(self):
 		word = self.word
@@ -83,14 +89,15 @@ class Oxford_Search():
 		r = requests.get(url, headers = {'app_id' : app_id, 'app_key' : app_key})
 
 		# r.json to dict
-		rjson: str = r.json()
-		rdict: dict = json.load(rjson)
+		rjson = r.json()
+		# rdict: dict = json.load(rjson)
 
-		returnstuff = object()
-		returnstuff.code = r.status_code
-		returnstuff.json = r.json()
-		returnstuff.dict = rdict
+		class Returnstuff():
+			def __init__(self):
+				self.code = r.status_code
+				self.json = r.json()
+				self.dict = rjson
 
-		return returnstuff
+		return Returnstuff()
 
 

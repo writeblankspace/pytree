@@ -2,17 +2,29 @@
 	"metadata": { "provider": "Oxford University Press" },
 	"results": [
 		{
-			"id": "nicer",
+			"id": "ruling",
 			"language": "en",
 			"lexicalEntries": [
 				{
-					"inflectionOf": [{ "id": "nice", "text": "nice" }],
+					"inflectionOf": [{ "id": "ruling", "text": "ruling" }],
+					"language": "en",
+					"lexicalCategory": { "id": "noun", "text": "Noun" },
+					"text": "ruling"
+				},
+				{
+					"inflectionOf": [{ "id": "ruling", "text": "ruling" }],
 					"language": "en",
 					"lexicalCategory": { "id": "adjective", "text": "Adjective" },
-					"text": "nicer"
+					"text": "ruling"
+				},
+				{
+					"inflectionOf": [{ "id": "rule", "text": "rule" }],
+					"language": "en",
+					"lexicalCategory": { "id": "verb", "text": "Verb" },
+					"text": "ruling"
 				}
 			],
-			"word": "nicer"
+			"word": "ruling"
 		}
 	]
 }

@@ -26,13 +26,13 @@ class Oxford_Search():
 		dictionary = self.oxford_dictionary()
 		thesaurus = self.oxford_thesaurus()
 
-		self.lemmas = lemmas.dict
-		self.dictionary = dictionary.dict
-		self.thesaurus = thesaurus.dict
+		self.lemmas: dict = lemmas.dict
+		self.dictionary: dict = dictionary.dict
+		self.thesaurus: dict = thesaurus.dict
 
-		self.lemmas_code = lemmas.code
-		self.dictionary_code = dictionary.code
-		self.thesaurus_code = thesaurus.code
+		self.lemmas_code: int = lemmas.code
+		self.dictionary_code: int = dictionary.code
+		self.thesaurus_code: int = thesaurus.code
 
 	def oxford_lemmas(self):
 		word = self.word

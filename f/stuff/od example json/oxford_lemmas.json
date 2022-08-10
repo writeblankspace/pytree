@@ -1,0 +1,18 @@
+{
+	"metadata": { "provider": "Oxford University Press" },
+	"results": [
+		{
+			"id": "nicer",
+			"language": "en",
+			"lexicalEntries": [
+				{
+					"inflectionOf": [{ "id": "nice", "text": "nice" }],
+					"language": "en",
+					"lexicalCategory": { "id": "adjective", "text": "Adjective" },
+					"text": "nicer"
+				}
+			],
+			"word": "nicer"
+		}
+	]
+}

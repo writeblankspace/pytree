@@ -1,0 +1,184 @@
+{
+	"id": "nice",
+	"metadata": {
+		"operation": "retrieve",
+		"provider": "Oxford University Press",
+		"schema": "Thesaurus"
+	},
+	"results": [
+		{
+			"id": "nice",
+			"language": "en-gb",
+			"lexicalEntries": [
+				{
+					"entries": [
+						{
+							"senses": [
+								{
+									"antonyms": [{ "language": "en", "text": "unpleasant" }],
+									"examples": [
+										{ "text": "have a nice time" },
+										{ "text": "it's a nice part of the country" }
+									],
+									"id": "t_en_gb0009984.001",
+									"subsenses": [
+										{
+											"id": "id9c6c9835-5e42-494f-b74b-ddbd79a915e2",
+											"regions": [{ "id": "scottish", "text": "Scottish" }],
+											"synonyms": [
+												{ "language": "en", "text": "bonny" },
+												{ "language": "en", "text": "couthy" }
+											]
+										},
+										{
+											"id": "ide4832173-9d39-40fd-a078-61ba13e643d6",
+											"synonyms": [{ "language": "en", "text": "irie" }]
+										},
+										{
+											"id": "id64e8b34b-897a-46af-b422-2a2720525329",
+											"registers": [{ "id": "informal", "text": "Informal" }],
+											"synonyms": [
+												{ "language": "en", "text": "lovely" },
+												{ "language": "en", "text": "great" }
+											]
+										},
+										{
+											"id": "id2136ce76-c077-4af5-b574-94f0be86b39f",
+											"regions": [
+												{ "id": "north_american", "text": "North American" }
+											],
+											"registers": [{ "id": "informal", "text": "Informal" }],
+											"synonyms": [{ "language": "en", "text": "neat" }]
+										},
+										{
+											"id": "id94a9451b-3b7a-4b3f-b0cd-c7dd8046458c",
+											"regions": [
+												{ "id": "south_african", "text": "South African" }
+											],
+											"registers": [{ "id": "informal", "text": "Informal" }],
+											"synonyms": [
+												{ "language": "en", "text": "lekker" },
+												{ "language": "en", "text": "mooi" }
+											]
+										}
+									],
+									"synonyms": [
+										{ "language": "en", "text": "enjoyable" },
+										{ "language": "en", "text": "pleasant" },
+										{ "language": "en", "text": "pleasurable" },
+										{ "language": "en", "text": "agreeable" },
+										{ "language": "en", "text": "delightful" },
+										{ "language": "en", "text": "satisfying" },
+										{ "language": "en", "text": "gratifying" },
+										{ "language": "en", "text": "acceptable" },
+										{ "language": "en", "text": "to one's liking" },
+										{ "language": "en", "text": "entertaining" },
+										{ "language": "en", "text": "amusing" },
+										{ "language": "en", "text": "diverting" },
+										{ "language": "en", "text": "marvellous" },
+										{ "language": "en", "text": "good" }
+									]
+								},
+								{
+									"antonyms": [{ "language": "en", "text": "nasty" }],
+									"examples": [{ "text": "they were such nice people" }],
+									"id": "t_en_gb0009984.002",
+									"synonyms": [
+										{ "language": "en", "text": "pleasant" },
+										{ "language": "en", "text": "likeable" },
+										{ "language": "en", "text": "agreeable" },
+										{ "language": "en", "text": "personable" },
+										{ "language": "en", "text": "charming" },
+										{ "language": "en", "text": "delightful" },
+										{ "language": "en", "text": "amiable" },
+										{ "language": "en", "text": "affable" },
+										{ "language": "en", "text": "friendly" },
+										{ "language": "en", "text": "kindly" },
+										{ "language": "en", "text": "genial" },
+										{ "language": "en", "text": "congenial" },
+										{ "language": "en", "text": "good-natured" },
+										{ "language": "en", "text": "engaging" },
+										{ "language": "en", "text": "gracious" },
+										{ "language": "en", "text": "sympathetic" },
+										{ "language": "en", "text": "understanding" },
+										{ "language": "en", "text": "compassionate" },
+										{ "language": "en", "text": "good" }
+									]
+								},
+								{
+									"antonyms": [
+										{ "language": "en", "text": "unrefined" },
+										{ "language": "en", "text": "rough" }
+									],
+									"examples": [{ "text": "he's got very nice manners" }],
+									"id": "t_en_gb0009984.003",
+									"synonyms": [
+										{ "language": "en", "text": "polite" },
+										{ "language": "en", "text": "courteous" },
+										{ "language": "en", "text": "civil" },
+										{ "language": "en", "text": "refined" },
+										{ "language": "en", "text": "cultivated" },
+										{ "language": "en", "text": "polished" },
+										{ "language": "en", "text": "genteel" },
+										{ "language": "en", "text": "elegant" }
+									]
+								},
+								{
+									"antonyms": [
+										{ "language": "en", "text": "rough" },
+										{ "language": "en", "text": "approximate" }
+									],
+									"examples": [
+										{ "text": "that's a rather nice distinction to make" }
+									],
+									"id": "t_en_gb0009984.004",
+									"synonyms": [
+										{ "language": "en", "text": "subtle" },
+										{ "language": "en", "text": "fine" },
+										{ "language": "en", "text": "delicate" },
+										{ "language": "en", "text": "minute" },
+										{ "language": "en", "text": "precise" },
+										{ "language": "en", "text": "exact" },
+										{ "language": "en", "text": "accurate" },
+										{ "language": "en", "text": "strict" },
+										{ "language": "en", "text": "close" },
+										{ "language": "en", "text": "careful" },
+										{ "language": "en", "text": "meticulous" },
+										{ "language": "en", "text": "rigorous" },
+										{ "language": "en", "text": "scrupulous" },
+										{ "language": "en", "text": "ultra-fine" }
+									]
+								},
+								{
+									"antonyms": [
+										{ "language": "en", "text": "stormy" },
+										{ "language": "en", "text": "nasty" },
+										{ "language": "en", "text": "rough" }
+									],
+									"examples": [{ "text": "it's a nice day" }],
+									"id": "t_en_gb0009984.005",
+									"synonyms": [
+										{ "language": "en", "text": "fine" },
+										{ "language": "en", "text": "dry" },
+										{ "language": "en", "text": "sunny" },
+										{ "language": "en", "text": "cloudless" },
+										{ "language": "en", "text": "warm" },
+										{ "language": "en", "text": "mild" },
+										{ "language": "en", "text": "pleasant" },
+										{ "language": "en", "text": "agreeable" }
+									]
+								}
+							]
+						}
+					],
+					"language": "en-gb",
+					"lexicalCategory": { "id": "adjective", "text": "Adjective" },
+					"text": "nice"
+				}
+			],
+			"type": "headword",
+			"word": "nice"
+		}
+	],
+	"word": "nice"
+}

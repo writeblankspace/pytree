@@ -59,6 +59,7 @@ class Dictionary(commands.Cog):
 			super().__init__(placeholder='Select a definition...', min_values=1, max_values=1, options=options)
 
 		async def callback(self, interaction: discord.Interaction):
+			await interaction.response.defer()
 			choice: str = self.values[0]
 			lexicalCategory: str = choice.split(': ')[0]
 			word: str = choice.split(': ')[1]
@@ -79,8 +80,23 @@ class Dictionary(commands.Cog):
 				entry = entry,
 				index = index,
 			)
+
+			self.view.word = word
+			self.view.lexicalCategory = lexicalCategory
+			self.view.entry = entry
+			self.view.index = index
 			
-			await interaction.response.edit_message(embed=embed)
+			all_buttons = self.view.children
+			# get button
+			left = discord.utils.get(all_buttons, custom_id="left")
+			right = discord.utils.get(all_buttons, custom_id="right")
+			if left == None and right == None:
+				self.view.add_item(self.view.left)
+				self.view.add_item(self.view.right)
+
+			self.view.disable_buttons()
+			
+			await interaction.edit_original_response(embed=embed, view=self.view)
 
 	class OdDropdownView(discord.ui.View):
 		def __init__(self, OdDropdown, lemmas_results: list):
@@ -88,6 +104,62 @@ class Dictionary(commands.Cog):
 
 			# Adds the dropdown to our view object.
 			self.add_item(OdDropdown(lemmas_results))
+		
+			self.word = None
+			self.lexicalCategory = None
+			self.entry = None
+			self.index = None
+
+			self.remove_item(self.left)
+			self.remove_item(self.right)
+
+		def disable_buttons(self):
+			senses: list = self.entry["senses"]
+
+			all_buttons = self.children
+
+			leftbutton: discord.ui.Button = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton: discord.ui.Button = discord.utils.get(all_buttons, custom_id="right")
+
+			if self.index == 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+			
+			if self.index + 1 == len(senses):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
+
+		def get_embed(self, index: int):
+			embed = dictionary_embed(
+				word=self.word,
+				lexicalCategory=self.lexicalCategory,
+				entry=self.entry,
+				index=index
+			)
+
+			return embed
+
+		@discord.ui.button(label='◄', style=discord.ButtonStyle.secondary, custom_id="left", row=2)
+		async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
+			await interaction.response.defer()
+			# assuming this button is active
+			self.index -= 1
+			embed = self.get_embed(self.index)
+			self.disable_buttons()
+			
+			await interaction.edit_original_response(embed=embed, view=self)
+		
+		@discord.ui.button(label='►', style=discord.ButtonStyle.secondary, custom_id="right", row=2)
+		async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
+			await interaction.response.defer()
+			# assuming this button is active
+			self.index += 1
+			embed = self.get_embed(self.index)
+			self.disable_buttons()
+			
+			await interaction.edit_original_response(embed=embed, view=self)
 
 	@group.command(name="dictionary")
 	async def dictionary(self, interaction: discord.Interaction, word: str, ephemeral: bool = True):

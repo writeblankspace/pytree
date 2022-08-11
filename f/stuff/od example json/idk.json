@@ -1,50 +1,100 @@
 {
-	"subsenses": [
+	"id": "ruler",
+	"metadata": {
+		"operation": "retrieve",
+		"provider": "Oxford University Press",
+		"schema": "RetrieveEntry"
+	},
+	"results": [
 		{
-			"constructions": [{ "text": "nice to" }],
-			"definitions": ["(of a person) good-natured; kind"],
-			"examples": [
-				{ "text": "he's a really nice guy" },
-				{ "text": "Joe had been very nice to her" },
-				{ "text": "that wasn't very nice of her" }
-			],
-			"id": "m_en_gbus0690430.010",
-			"shortDefinitions": ["kind"],
-			"synonyms": [
-				{ "language": "en", "text": "pleasant" },
-				{ "language": "en", "text": "likeable" },
-				{ "language": "en", "text": "agreeable" },
-				{ "language": "en", "text": "personable" },
-				{ "language": "en", "text": "charming" },
-				{ "language": "en", "text": "delightful" },
-				{ "language": "en", "text": "amiable" },
-				{ "language": "en", "text": "affable" },
-				{ "language": "en", "text": "friendly" },
-				{ "language": "en", "text": "kindly" },
-				{ "language": "en", "text": "genial" },
-				{ "language": "en", "text": "congenial" },
-				{ "language": "en", "text": "good-natured" },
-				{ "language": "en", "text": "engaging" },
-				{ "language": "en", "text": "gracious" },
-				{ "language": "en", "text": "sympathetic" },
-				{ "language": "en", "text": "understanding" },
-				{ "language": "en", "text": "compassionate" },
-				{ "language": "en", "text": "good" }
-			],
-			"thesaurusLinks": [
-				{ "entry_id": "nice", "sense_id": "t_en_gb0009984.002" }
-			]
-		},
-		{
-			"definitions": ["not good; unpleasant"],
-			"examples": [
+			"id": "ruler",
+			"language": "en-gb",
+			"lexicalEntries": [
 				{
-					"text": "that's a nice way to come into my kitchen—no greeting!"
+					"derivatives": [{ "id": "rulership", "text": "rulership" }],
+					"entries": [
+						{
+							"pronunciations": [
+								{
+									"audioFile": "https://audio.oxforddictionaries.com/en/mp3/ruler__gb_1.mp3",
+									"dialects": ["British English"],
+									"phoneticNotation": "IPA",
+									"phoneticSpelling": "ˈruːlə"
+								}
+							],
+							"senses": [
+								{
+									"definitions": [
+										"a person exercising government or dominion."
+									],
+									"id": "m_en_gbus0888040.006",
+									"semanticClasses": [{ "id": "ruler", "text": "Ruler" }],
+									"shortDefinitions": [
+										"person exercising government or dominion"
+									],
+									"subsenses": [
+										{
+											"crossReferenceMarkers": [
+												"another term for ruling planet"
+											],
+											"crossReferences": [
+												{
+													"id": "ruling_planet",
+													"text": "ruling planet",
+													"type": "another term for"
+												}
+											],
+											"domainClasses": [
+												{ "id": "astrology", "text": "Astrology" }
+											],
+											"domains": [{ "id": "astrology", "text": "Astrology" }],
+											"id": "m_en_gbus0888040.009"
+										}
+									],
+									"synonyms": [
+										{ "language": "en", "text": "leader" },
+										{ "language": "en", "text": "sovereign" },
+										{ "language": "en", "text": "monarch" },
+										{ "language": "en", "text": "potentate" },
+										{ "language": "en", "text": "crowned head" },
+										{ "language": "en", "text": "head of state" }
+									],
+									"thesaurusLinks": [
+										{ "entry_id": "ruler", "sense_id": "t_en_gb0012779.001" }
+									]
+								},
+								{
+									"definitions": [
+										"a straight strip or cylinder of plastic, wood, metal, or other rigid material, typically marked at regular intervals and used to draw straight lines or measure distances."
+									],
+									"id": "m_en_gbus0888040.011",
+									"semanticClasses": [
+										{ "id": "instrument", "text": "Instrument" }
+									],
+									"shortDefinitions": [
+										"straight strip or cylinder of plastic, wood, metal, or other rigid material"
+									],
+									"synonyms": [
+										{ "language": "en", "text": "system" },
+										{ "language": "en", "text": "standard" },
+										{ "language": "en", "text": "units" },
+										{ "language": "en", "text": "scale" }
+									],
+									"thesaurusLinks": [
+										{ "entry_id": "measure", "sense_id": "t_en_gb0009293.013" }
+									]
+								}
+							]
+						}
+					],
+					"language": "en-gb",
+					"lexicalCategory": { "id": "noun", "text": "Noun" },
+					"text": "ruler"
 				}
 			],
-			"id": "m_en_gbus0690430.011",
-			"registers": [{ "id": "ironic", "text": "Ironic" }],
-			"shortDefinitions": ["not good"]
+			"type": "headword",
+			"word": "ruler"
 		}
-	]
+	],
+	"word": "ruler"
 }

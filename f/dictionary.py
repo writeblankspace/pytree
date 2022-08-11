@@ -118,7 +118,7 @@ def dictionary_embed(word: str, lexicalCategory: str, entry: dict, index: int) -
 	definition: str = f"Definition: {sense['definitions'][0]}"
 	# grammatical features
 	grammaticalFeatures = entry.get("grammaticalFeatures")
-	if grammaticalFeatures != None:
+	if grammaticalFeatures is not None and len(grammaticalFeatures) > 0:
 		grammaticalFeatures_str = []
 		for feature in grammaticalFeatures:
 			grammaticalFeatures_str.append(f"[{feature['text'].lower()}]")
@@ -127,13 +127,13 @@ def dictionary_embed(word: str, lexicalCategory: str, entry: dict, index: int) -
 		grammaticalFeatures_str = ""
 	# how to pronounce
 	pronunciations = entry.get("pronunciations")
-	if pronunciations != None:
+	if pronunciations is not None and len(pronunciations) > 0:
 		pronunciation = f"Pronunciation: {pronunciations[0]['phoneticSpelling']}" + "\n"
 	else:
 		pronunciation = ""
 	# registers
 	registers = sense.get("registers")
-	if registers != None:
+	if registers is not None and len(registers) > 0:
 		registers_str = []
 		for register in registers:
 			registers_str.append(f"[{register['text'].lower()}]")
@@ -148,7 +148,7 @@ def dictionary_embed(word: str, lexicalCategory: str, entry: dict, index: int) -
 	)
 	
 	examples = sense.get("examples")
-	if examples != None:
+	if examples is not None and len(examples) > 0:
 		example_str = []
 		for example in examples:
 			example_str.append(f"- {example['text']}")
@@ -156,14 +156,15 @@ def dictionary_embed(word: str, lexicalCategory: str, entry: dict, index: int) -
 		example_str = example_str[:3]
 		example_str = '\n'.join(example_str)
 
-		embed.add_field(
-			name="Examples",
-			value=example_str,
-			inline=True
-		)
+		if example_str != "":
+			embed.add_field(
+				name="Examples",
+				value=example_str,
+				inline=True
+			)
 	
 	synonyms = sense.get("synonyms")
-	if synonyms != None:
+	if synonyms is not None and len(synonyms) > 0:
 		synonyms_str = []
 		for synonym in synonyms:
 			synonyms_str.append(synonym["text"])
@@ -171,32 +172,36 @@ def dictionary_embed(word: str, lexicalCategory: str, entry: dict, index: int) -
 		synonyms_str = synonyms_str[:9]
 		synonyms_str = ', '.join(synonyms_str)
 
-		embed.add_field(
-			name="Synonyms",
-			value=synonyms_str,
-			inline=True
-		)
-	
+		if synonyms_str != "":
+			embed.add_field(
+				name="Synonyms",
+				value=synonyms_str,
+				inline=True
+			)
+		
 	subsenses: list = sense.get("subsenses")
-	if subsenses != None:
+	if subsenses is not None and len(subsenses) > 0:
 		subsenses_str = []
 		for subsense in subsenses:
-			subsenses_str.append(f"- {subsense['definitions'][0]}")
+			if subsense.get("definitions") is not None:
+				subsenses_str.append(f"- {subsense['definitions'][0]}")
 		subsenses_str = '\n'.join(subsenses_str)
 
-		embed.add_field(
-			name="Other senses of the word",
-			value=subsenses_str,
-			inline=False
-		)
+		if subsenses_str != "":
+			embed.add_field(
+				name="Other senses of the word",
+				value=subsenses_str,
+				inline=False
+			)
 	
 	etymology = entry.get("etymologies")
-	if etymology != None:
-		embed.add_field(
-			name="Etymology",
-			value=etymology[0],
-			inline=False
-		)
+	if etymology is not None:
+		if etymology[0] != "":
+			embed.add_field(
+				name="Etymology",
+				value=etymology[0],
+				inline=False
+			)
 	
 	embed.set_footer(
 		text=f"sense {index + 1} of {len(entry['senses'])}"

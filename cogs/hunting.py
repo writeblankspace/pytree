@@ -145,7 +145,7 @@ class Hunting(commands.Cog):
 			bugs = 1
 
 		embed = discord.Embed(
-			title=f"{user.name} started a bug hunt!",
+			title=f"{theme.loader} {user.name} started a bug hunt!",
 			description=f"There are **{bugs} bugs** in the area.",
 			color=theme.colours.secondary
 		)
@@ -161,7 +161,7 @@ class Hunting(commands.Cog):
 		await asyncio.sleep(3)
 
 		embed = discord.Embed(
-			title=f"{user.name} is hunting for bugs!",
+			title=f"{theme.loader} {user.name} is hunting for bugs!",
 			description=f"There are **{bugs} bugs** in the area. Click on the items you want to use hunt the bugs. There is a 1/3 chance of one bug being killed per attempt.\n" +
 			"Other users can join in too! Rewards will be shared equally.\n" +
 			"```asciidoc\n" +
@@ -180,7 +180,7 @@ class Hunting(commands.Cog):
 		await asyncio.sleep(15)
 
 		embed = discord.Embed(
-			title=f"{user.name}'s hunt ended!",
+			title=f"{theme.loader} {user.name}'s hunt ended!",
 			description=f"There were **{bugs} bugs** in the area." +
 			"\nPlease wait while the results are calculated.",
 			color=theme.colours.secondary

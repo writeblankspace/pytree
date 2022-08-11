@@ -58,6 +58,7 @@ class Templates(object):
 			colours=self.colours,
 			pfp=self.pfp
 		)
+		self.loader = "<:loader:1007246985893511248>"
 
 
 templates = Templates()

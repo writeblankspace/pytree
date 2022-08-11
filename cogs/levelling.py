@@ -228,7 +228,7 @@ class Levelling(commands.Cog):
 
 			embed = discord.Embed(
 				title = "You can't rank bots!", 
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.followup.send(embed=embed)
 	
@@ -354,6 +354,7 @@ class Levelling(commands.Cog):
 			embed = discord.Embed(
 				title = f"{guild.name}'s leaderboard",
 				description = description,
+				color = theme.colours.primary
 			)
 
 			return embed
@@ -607,7 +608,7 @@ class Levelling(commands.Cog):
 			if len(keys) == 0:
 				embed = discord.Embed(
 					title = f"There aren't any trees in {member.name}'s forest yet!", 
-					colour = templates.colours["fail"]
+					colour = theme.colours.red
 				)
 				await interaction.followup.send(embed=embed)
 				return
@@ -620,7 +621,8 @@ class Levelling(commands.Cog):
 
 				embed = discord.Embed(
 					title = f"{member.name}'s tree for {date}",
-					description = f"level {level} | {xp} xp"
+					description = f"level {level} | {xp} xp",
+					color = theme.colours.primary
 				)
 
 				embed.set_image(url=tree)
@@ -634,7 +636,8 @@ class Levelling(commands.Cog):
 			
 			embed = discord.Embed(
 				title = f"{member.name}'s forest",
-				description = description
+				description = description,
+				colour = theme.colours.primary
 			)
 			view = self.ForestDropdownView(
 				ForestDropdown = self.ForestDropdown,
@@ -652,7 +655,7 @@ class Levelling(commands.Cog):
 
 			embed = discord.Embed(
 				title = "Bots don't have forests!", 
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.followup.send(embed=embed)
 

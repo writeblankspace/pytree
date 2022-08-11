@@ -170,7 +170,7 @@ class Dictionary(commands.Cog):
 		embed = discord.Embed(
 			title = f"Oxford Dictionary: {word.lower()}",
 			description = "Please wait. This may take a while.",
-			color = templates.colours["draw"]
+			color = theme.colours.secondary
 		)
 
 		await interaction.followup.send(embed=embed)
@@ -188,7 +188,7 @@ class Dictionary(commands.Cog):
 			embed = discord.Embed(
 				title = f"'{word.lower()}' not found",
 				description = "```\n" + f"Error {odl.lemmas_code}: {odl.lemmas['error']}```",
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.edit_original_response(embed=embed)
 

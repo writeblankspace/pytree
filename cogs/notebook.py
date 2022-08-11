@@ -59,7 +59,7 @@ class Notebook(commands.Cog):
 			embed = discord.Embed(
 				title = "Something went wrong...", 
 				description = f"Please ping the developer.",
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -112,6 +112,7 @@ class Notebook(commands.Cog):
 			embed = discord.Embed(
 				title = f"{self.user.name}'s notebook",
 				description = notebook[index],
+				color = theme.colours.primary
 			)
 			embed.set_footer(
 				text = f"page {index + 1} of {len(notebook)}"
@@ -124,7 +125,7 @@ class Notebook(commands.Cog):
 			if interaction.user != self.user:
 				embed = discord.Embed(
 					title = "Only the owner of the notebook can do this.",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
@@ -145,7 +146,7 @@ class Notebook(commands.Cog):
 			else:
 				embed = discord.Embed(
 					title = "Only the owner of the notebook can do this.",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 		
@@ -154,7 +155,7 @@ class Notebook(commands.Cog):
 			if interaction.user != self.user:
 				embed = discord.Embed(
 					title = "Only the owner of the notebook can do this.",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
@@ -178,14 +179,14 @@ class Notebook(commands.Cog):
 			if interaction.user != self.user:
 				embed = discord.Embed(
 					title = "Only the owner of the notebook can do this.",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
 				if len(self.notebook()) == 1:
 					embed = discord.Embed(
 						title = "Your notebook must have at least one page.",
-						color = templates.colours["fail"]
+						color = theme.colours.red
 					)
 					await interaction.response.send_message(embed=embed, ephemeral=True)
 				else:
@@ -210,7 +211,7 @@ class Notebook(commands.Cog):
 			if interaction.user != self.user:
 				embed = discord.Embed(
 					title = "Only the owner of the notebook can do this.",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
@@ -250,6 +251,7 @@ class Notebook(commands.Cog):
 		embed = discord.Embed(
 			title = f"{user.name}'s notebook",
 			description = notebook[currentpage],
+			color = theme.colours.primary
 		)
 		embed.set_footer(
 			text = f"page {currentpage + 1} of {len(notebook)}"
@@ -291,7 +293,7 @@ class Notebook(commands.Cog):
 				embed = discord.Embed(
 					title = "Your note is too long",
 					description = "```\n" + f"{self.notes.value}```",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
@@ -302,7 +304,7 @@ class Notebook(commands.Cog):
 				embed = discord.Embed(
 					title = "Quick note saved!",
 					description = "```\n" + f"{self.notes.value}```",
-					color = templates.colours["success"]
+					color = theme.colours.green
 				)
 
 				await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -311,7 +313,7 @@ class Notebook(commands.Cog):
 			embed = discord.Embed(
 				title = "Something went wrong...", 
 				description = f"Please ping the developer.",
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.response.send_message(embed=embed, ephemeral=True)
 

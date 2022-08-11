@@ -74,7 +74,7 @@ class Hunting(commands.Cog):
 				embed = discord.Embed(
 					title="You don't have this item!",
 					description=f"{itemname.capitalize()} can be bought in the shop.",
-					color=templates.colours["fail"]
+					color=theme.colours.red
 				)
 				return Result(False, embed)
 
@@ -147,7 +147,7 @@ class Hunting(commands.Cog):
 		embed = discord.Embed(
 			title=f"{user.name} started a bug hunt!",
 			description=f"There are **{bugs} bugs** in the area.",
-			color=templates.colours["draw"]
+			color=theme.colours.secondary
 		)
 
 		footertext = f"This hunt starts in 3 seconds."
@@ -166,7 +166,7 @@ class Hunting(commands.Cog):
 			"Other users can join in too! Rewards will be shared equally.\n" +
 			"```asciidoc\n" +
 			f"{user.name}:: started the bug hunt```",
-			color=templates.colours["success"]
+			color=theme.colours.green
 		)
 
 		embed.set_footer(
@@ -183,7 +183,7 @@ class Hunting(commands.Cog):
 			title=f"{user.name}'s hunt ended!",
 			description=f"There were **{bugs} bugs** in the area." +
 			"\nPlease wait while the results are calculated.",
-			color=templates.colours["draw"]
+			color=theme.colours.secondary
 		)
 
 		data = db.read()
@@ -277,7 +277,7 @@ class Hunting(commands.Cog):
 			description=f"**{successes} bugs** were killed out of {attempts} attempts." + "\n" +
 			f"There were {bugs} bugs in the area." + "\n" +
 			f"Each user earned **{money_reward} {self.currency}** and **{xp_reward} xp**.",
-			color=templates.colours["success"]
+			color=theme.colours.green
 		)
 
 		embed.add_field(

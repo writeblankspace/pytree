@@ -31,11 +31,11 @@ class utility(commands.Cog):
 		latency = round(self.bot.latency * 1000, 2)
 
 		if latency > 500:
-			colour = templates.colours["fail"]
+			colour = theme.colours.red
 		elif latency > 100:
-			colour = templates.colours["draw"]
+			colour = theme.colours.secondary
 		else:
-			colour = templates.colours["success"]
+			colour = theme.colours.green
 
 		embed = discord.Embed(
 			title="🏓 Pong!",
@@ -100,7 +100,7 @@ class utility(commands.Cog):
 			embed = discord.Embed(
 				title = "Issue submitted!", 
 				description = f"**Title:** {self.issuetitle.value}\n**Body:** {self.body.value}",
-				colour = templates.colours["success"]
+				colour = theme.colours.green
 			)
 			await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -108,7 +108,7 @@ class utility(commands.Cog):
 			embed = discord.Embed(
 				title = "Something went wrong...", 
 				description = f"Please ping the developer.",
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -201,7 +201,7 @@ class utility(commands.Cog):
 		embed = discord.Embed(
 			title = "Vote-delete [0]",
 			description = "Vote on whether or not to delete this message.\nA total of 3 votes is required to delete the message within 10 seconds.",
-			colour = templates.colours["fail"]
+			colour = theme.colours.red
 		)
 		embed.set_footer(
 			text = f"invoked by {interaction.user.name}"
@@ -211,7 +211,7 @@ class utility(commands.Cog):
 
 		confirmation = discord.Embed(
 			title = "Started vote-delete!",
-			colour = templates.colours["success"]
+			colour = theme.colours.green
 		)
 
 		await interaction.followup.send(embed=confirmation)
@@ -229,7 +229,7 @@ class utility(commands.Cog):
 			await message.delete()
 		else:
 			view.embed.__setattr__("description", "Message was not deleted.")
-			embed.__setattr__("colour", templates.colours["draw"])
+			embed.__setattr__("colour", theme.colours.secondary)
 			await mymessage.edit(embed=view.embed, view=view)
 		await asyncio.sleep(3)
 		await mymessage.delete()

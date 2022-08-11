@@ -128,7 +128,7 @@ class Economy(commands.Cog):
 			else:
 				embed = discord.Embed(
 					title="Only the owner of this item can do this!",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -212,7 +212,7 @@ class Economy(commands.Cog):
 			else:
 				embed = discord.Embed(
 					title="Only the owner of this item can do this!",
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -295,6 +295,7 @@ class Economy(commands.Cog):
 				# capitalise item name
 				title = f"{item.capitalize()}{about}",
 				description = description,
+				color = theme.colours.primary
 			)
 			embed.set_footer(
 				text = f"Owned by {self.user.name}#{self.user.discriminator}",
@@ -364,7 +365,7 @@ class Economy(commands.Cog):
 
 			embed = discord.Embed(
 				title = "You can't rank bots!", 
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.followup.send(embed=embed)
 		else:
@@ -409,6 +410,7 @@ class Economy(commands.Cog):
 			embed = discord.Embed(
 				title = f"{member.name}'s stats",
 				description = general,
+				color = theme.colours.primary
 			)
 
 			if len(inventorylist) == 0:
@@ -540,6 +542,7 @@ class Economy(commands.Cog):
 			embed = discord.Embed(
 				title = f"{guild.name}'s leaderboard",
 				description = description,
+				color = theme.colours.primary
 			)
 
 			return embed
@@ -755,7 +758,8 @@ class Economy(commands.Cog):
 
 			embed = discord.Embed(
 				title = f"{name.capitalize()} [{price} {self.currency}]",
-				description = description
+				description = description,
+				color = theme.colours.primary
 			)
 			
 			view = self.view
@@ -811,7 +815,7 @@ class Economy(commands.Cog):
 				embed = discord.Embed(
 					title = f"You bought x1 of {self.shopitem}",
 					description = f"You now have {data[guildid][userid]['$$$']} {self.currency}",
-					color = templates.colours["success"]
+					color = theme.colours.green
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
@@ -819,7 +823,7 @@ class Economy(commands.Cog):
 					title = f"You don't have enough money to buy that.",
 					description = "\n".join([f"You only have {cash} {self.currency}.",
 						f"You'll need {price - cash} more to buy it."]),
-					color = templates.colours["fail"]
+					color = theme.colours.red
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -835,9 +839,9 @@ class Economy(commands.Cog):
 			price = itemdict["price"]
 
 			if balance >= price:
-				colour = templates.colours["success"]
+				colour = theme.colours.green
 			else:
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			
 			# how many of this item do you have?
 			inventory = data[guildid][userid]["inventory"]
@@ -875,6 +879,7 @@ class Economy(commands.Cog):
 		embed = discord.Embed(
 			title = f"{self.bot.user.name} Shop",
 			description = f"**{name}:** {description} For {price} {self.currency} only!",
+			color = theme.colours.primary
 		)
 
 		view = self.ShopDropView(self.ShopDrop, self.currency)

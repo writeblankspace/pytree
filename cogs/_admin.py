@@ -54,7 +54,7 @@ class Admin(commands.Cog):
 		embed = discord.Embed(
 			title='Successfully dumped!',
 			description=description,
-			color=templates.colours["success"]
+			color=theme.colours.green
 		)
 		# send message, delete after 5 seconds
 		await interaction.followup.send(embed=embed)
@@ -68,7 +68,7 @@ class Admin(commands.Cog):
 			embed = discord.Embed(
 				title = "Restricted Command", 
 				description = "This command is restricted to the bot owner only.",
-				colour = templates.colours["fail"]
+				colour = theme.colours.red
 			)
 			await interaction.response.send_message(embed=embed, ephemeral=True)
 			return
@@ -148,7 +148,7 @@ class Admin(commands.Cog):
 		
 		embed = discord.Embed(
 			title = f"Archived {date} for {len(keys)} members.",
-			color = templates.colours["success"]
+			color = theme.colours.green
 		)
 
 		await interaction.followup.send(embed=embed)

@@ -162,6 +162,9 @@ class Dictionary(commands.Cog):
 			await interaction.edit_original_response(embed=embed, view=self)
 
 	@group.command(name="dictionary")
+	@app_commands.describe(
+		word = "the word to look up"
+	)
 	async def dictionary(self, interaction: discord.Interaction, word: str, ephemeral: bool = True):
 		"""
 		Searches the Oxford Dictionary for a word."""

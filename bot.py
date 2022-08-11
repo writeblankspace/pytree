@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from discord import app_commands
 from f.alive import keep_alive
-from f.templates import templates
+from f.templates import theme
 import random
 import typing
 import logging
@@ -66,7 +66,7 @@ async def on_ready():
 	embed = discord.Embed(
 		title=f"Connected!",
 		description=f"`{randcode}`",
-		color=templates.colours["success"]
+		color=theme.colours.green
 	)
 
 	await channel.send(embed=embed)

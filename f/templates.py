@@ -1,7 +1,7 @@
 import discord
 class Theme(object):
 	def __init__(self):
-		self.loader = "<a:loader:1007256284178939904>"
+		self.loader = "<a:loader:1007265720926744586>"
 		self.colours = self.Colours()
 		self.colors = self.Colours()
 	class Colours(object):

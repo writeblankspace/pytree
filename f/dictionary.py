@@ -5,6 +5,7 @@ import json
 import os
 from dotenv import load_dotenv
 import discord
+from f.templates import theme
 
 load_dotenv()
 APP_ID = os.getenv('APP_ID')
@@ -144,7 +145,8 @@ def dictionary_embed(word: str, lexicalCategory: str, entry: dict, index: int) -
 
 	embed = discord.Embed(
 		title = f"{word} [{lexicalCategory}]" + grammaticalFeatures_str + registers_str,
-		description = pronunciation + definition
+		description = pronunciation + definition,
+		color = theme.colours.primary
 	)
 	
 	examples = sense.get("examples")

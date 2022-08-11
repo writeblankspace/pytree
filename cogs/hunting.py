@@ -145,8 +145,8 @@ class Hunting(commands.Cog):
 			bugs = 1
 
 		embed = discord.Embed(
-			title=f"{theme.loader} {user.name} started a bug hunt!",
-			description=f"There are **{bugs} bugs** in the area.",
+			title=f"{user.name} started a bug hunt!",
+			description=f"{theme.loader} There are **{bugs} bugs** in the area.",
 			color=theme.colours.secondary
 		)
 
@@ -182,7 +182,7 @@ class Hunting(commands.Cog):
 		embed = discord.Embed(
 			title=f"{theme.loader} {user.name}'s hunt ended!",
 			description=f"There were **{bugs} bugs** in the area." +
-			"\nPlease wait while the results are calculated.",
+			"\n" + f"{theme.loader} Please wait while the results are calculated.",
 			color=theme.colours.secondary
 		)
 

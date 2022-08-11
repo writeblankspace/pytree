@@ -199,8 +199,8 @@ class utility(commands.Cog):
 		Vote-deletes a message."""
 		await interaction.response.defer(ephemeral=True)
 		embed = discord.Embed(
-			title = f"{theme.loader} Vote-delete [0]",
-			description = "Vote on whether or not to delete this message.\nA total of 3 votes is required to delete the message within 10 seconds.",
+			title = f"Vote-delete [0]",
+			description = theme.loader + " Vote on whether or not to delete this message.\nA total of 3 votes is required to delete the message within 10 seconds.",
 			colour = theme.colours.red
 		)
 		embed.set_footer(
@@ -210,7 +210,7 @@ class utility(commands.Cog):
 		view = self.VoteDeleteView(embed)
 
 		confirmation = discord.Embed(
-			title = f"{theme.loader} Started vote-delete!",
+			title = f"Started vote-delete!",
 			colour = theme.colours.green
 		)
 

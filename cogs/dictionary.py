@@ -171,8 +171,8 @@ class Dictionary(commands.Cog):
 		await interaction.response.defer(ephemeral=ephemeral)
 
 		embed = discord.Embed(
-			title = f"Oxford Dictionary: {word.lower()}",
-			description = f"{theme.loader} Please wait. This may take a while.",
+			title = f"{theme.loader} Oxford Dictionary: {word.lower()}",
+			description = f"Please wait. This may take a while.",
 			color = theme.colours.secondary
 		)
 

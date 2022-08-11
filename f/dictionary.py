@@ -4,6 +4,7 @@ import  requests
 import json
 import os
 from dotenv import load_dotenv
+import discord
 
 load_dotenv()
 APP_ID = os.getenv('APP_ID')
@@ -15,28 +16,18 @@ default_lang = 'en-gb'
 
 main_url = "https://od-api.oxforddictionaries.com"
 
-class Oxford_Search():
+class Oxford_Search_Lemmas():
 	"""
-	Searches for a word in the Oxford Dictionary and parses it.
-	
-	`lemmas`: gives the root word of the word
-	`dictionary`: gives the derivatives, etymologies, definitions, examples, etc of the word
-	`thesaurus`: gives synonyms, antonyms, etc of the word"""
+	Searches for a word's lemmas."""
 	def __init__(self, word: str, lang: str = default_lang):
 		self.word = word
 		self.lang = lang
 
 		lemmas = self.oxford_lemmas()
-		dictionary = self.oxford_dictionary()
-		thesaurus = self.oxford_thesaurus()
 
 		self.lemmas: dict = lemmas.dict 
-		self.dictionary: dict = dictionary.dict
-		self.thesaurus: dict = thesaurus.dict
 
 		self.lemmas_code: int = lemmas.code
-		self.dictionary_code: int = dictionary.code
-		self.thesaurus_code: int = thesaurus.code
 
 	def oxford_lemmas(self):
 		word = self.word
@@ -58,6 +49,26 @@ class Oxford_Search():
 				self.dict = rjson
 
 		return Returnstuff()
+
+class Oxford_Search():
+	"""
+	Searches for a word in the Oxford Dictionary and parses it.
+	
+	`lemmas`: gives the root word of the word
+	`dictionary`: gives the derivatives, etymologies, definitions, examples, etc of the word
+	`thesaurus`: gives synonyms, antonyms, etc of the word"""
+	def __init__(self, word: str, lang: str = default_lang):
+		self.word = word
+		self.lang = lang
+
+		dictionary = self.oxford_dictionary()
+		thesaurus = self.oxford_thesaurus()
+
+		self.dictionary: dict = dictionary.dict
+		self.thesaurus: dict = thesaurus.dict
+
+		self.dictionary_code: int = dictionary.code
+		self.thesaurus_code: int = thesaurus.code
 	
 	def oxford_dictionary(self):
 		word = self.word
@@ -100,4 +111,95 @@ class Oxford_Search():
 
 		return Returnstuff()
 
+def dictionary_embed(word: str, lexicalCategory: str, entry: dict, index: int) -> discord.Embed:
+	sense = entry["senses"][index]
 
+	# definition
+	definition: str = f"Definition: {sense['definitions'][0]}"
+	# grammatical features
+	grammaticalFeatures = entry.get("grammaticalFeatures")
+	if grammaticalFeatures != None:
+		grammaticalFeatures_str = []
+		for feature in grammaticalFeatures:
+			grammaticalFeatures_str.append(f"[{feature['text'].lower()}]")
+		grammaticalFeatures_str = " " + ' '.join(grammaticalFeatures_str)
+	else:
+		grammaticalFeatures_str = ""
+	# how to pronounce
+	pronunciations = entry.get("pronunciations")
+	if pronunciations != None:
+		pronunciation = f"Pronunciation: {pronunciations[0]['phoneticSpelling']}" + "\n"
+	else:
+		pronunciation = ""
+	# registers
+	registers = sense.get("registers")
+	if registers != None:
+		registers_str = []
+		for register in registers:
+			registers_str.append(f"[{register['text'].lower()}]")
+		registers_str = " " + ' '.join(registers_str)
+	else:
+		registers_str = ""
+
+
+	embed = discord.Embed(
+		title = f"{word} [{lexicalCategory}]" + grammaticalFeatures_str + registers_str,
+		description = pronunciation + definition
+	)
+	
+	examples = sense.get("examples")
+	if examples != None:
+		example_str = []
+		for example in examples:
+			example_str.append(f"- {example['text']}")
+		# get the first three only
+		example_str = example_str[:3]
+		example_str = '\n'.join(example_str)
+
+		embed.add_field(
+			name="Examples",
+			value=example_str,
+			inline=True
+		)
+	
+	synonyms = sense.get("synonyms")
+	if synonyms != None:
+		synonyms_str = []
+		for synonym in synonyms:
+			synonyms_str.append(synonym["text"])
+		# only get the first nine
+		synonyms_str = synonyms_str[:9]
+		synonyms_str = ', '.join(synonyms_str)
+
+		embed.add_field(
+			name="Synonyms",
+			value=synonyms_str,
+			inline=True
+		)
+	
+	subsenses: list = sense.get("subsenses")
+	if subsenses != None:
+		subsenses_str = []
+		for subsense in subsenses:
+			subsenses_str.append(f"- {subsense['definitions'][0]}")
+		subsenses_str = '\n'.join(subsenses_str)
+
+		embed.add_field(
+			name="Other senses of the word",
+			value=subsenses_str,
+			inline=False
+		)
+	
+	etymology = entry.get("etymologies")
+	if etymology != None:
+		embed.add_field(
+			name="Etymology",
+			value=etymology[0],
+			inline=False
+		)
+	
+	embed.set_footer(
+		text=f"sense {index + 1} of {len(entry['senses'])}"
+	)
+
+	return embed

@@ -36,27 +36,51 @@ class Dictionary(commands.Cog):
 				lexicalCategory = entry["lexicalCategory"]["text"]
 
 				myod = Oxford_Search(inflection_of[0], language)
-				definition = myod.dictionary.get("results")[0]["lexicalEntries"][0]["entries"][0]["senses"][0]["shortDefinitions"][0]
 
-				options.append(
-					discord.SelectOption(
-						label = f"{lexicalCategory.lower()}: {', '.join(inflection_of)}",
-						description=f'{definition}'
+				definition = ""
+				while definition == "":
+					for result in myod.dictionary.get("results"):
+						lexicalEntries = result["lexicalEntries"][0]
+						if lexicalEntries["lexicalCategory"]["text"].lower() == lexicalCategory.lower():
+							definition = lexicalEntries["entries"][0]["senses"][0]["shortDefinitions"][0]
+					
+					if definition == "":
+						# this wouldn't work so move on to the next entry
+						definition = None
+
+				if definition != None:
+					options.append(
+						discord.SelectOption(
+							label = f"{lexicalCategory.lower()}: {', '.join(inflection_of)}",
+							description=f'{definition}'
+						)
 					)
-				)
 
-			# The placeholder is what will be shown when no option is chosen
-			# The min and max values indicate we can only pick one of the three options
-			# The options parameter defines the dropdown options. We defined this above
 			super().__init__(placeholder='Select a definition...', min_values=1, max_values=1, options=options)
 
 		async def callback(self, interaction: discord.Interaction):
-			# Use the interaction object to send a response message containing
-			# the user's favourite colour or choice. The self object refers to the
-			# Select object, and the values attribute gets a list of the user's
-			# selected options. We only want the first one.
-			await interaction.response.send_message(f'{self.values[0]}')
+			choice: str = self.values[0]
+			lexicalCategory: str = choice.split(': ')[0]
+			word: str = choice.split(': ')[1]
 
+			# find out which entry it is
+			myod = Oxford_Search(word)
+
+			for result in myod.dictionary.get("results"):
+				lexicalEntries: dict = result["lexicalEntries"][0]
+				if lexicalEntries["lexicalCategory"]["text"].lower() == lexicalCategory.lower():
+					entry: dict = lexicalEntries["entries"][0]
+			
+			index = 0
+
+			embed = dictionary_embed(
+				word = word,
+				lexicalCategory = lexicalCategory,
+				entry = entry,
+				index = index,
+			)
+			
+			await interaction.response.edit_message(embed=embed)
 
 	class OdDropdownView(discord.ui.View):
 		def __init__(self, OdDropdown, lemmas_results: list):
@@ -71,21 +95,30 @@ class Dictionary(commands.Cog):
 		Searches the Oxford Dictionary for a word."""
 		await interaction.response.defer(ephemeral=ephemeral)
 
-		od = Oxford_Search(word)
+		embed = discord.Embed(
+			title = f"Oxford Dictionary: {word.lower()}",
+			description = "Please wait. This may take a while.",
+			color = templates.colours["draw"]
+		)
 
-		if od.lemmas_code == 200:
-			lemmas = od.lemmas
+		await interaction.followup.send(embed=embed)
+
+		odl = Oxford_Search_Lemmas(word)
+
+		if odl.lemmas_code == 200:
+			lemmas = odl.lemmas
 			lemmas_results: list = lemmas.get("results") # list of dicts
 
 			view = self.OdDropdownView(self.OdDropdown, lemmas_results)
 
-			await interaction.followup.send(view=view)
+			await interaction.edit_original_response(embed=None, view=view)
 		else:
 			embed = discord.Embed(
-				title = f"{word.lower().capitalize()}",
-				description = "```\n" + f"Error {od.lemmas_code}: {od.lemmas['error']}```",
+				title = f"'{word.lower()}' not found",
+				description = "```\n" + f"Error {odl.lemmas_code}: {odl.lemmas['error']}```",
 				colour = templates.colours["fail"]
 			)
+			await interaction.edit_original_response(embed=embed)
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Dictionary(bot))

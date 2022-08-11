@@ -1,0 +1,50 @@
+{
+	"subsenses": [
+		{
+			"constructions": [{ "text": "nice to" }],
+			"definitions": ["(of a person) good-natured; kind"],
+			"examples": [
+				{ "text": "he's a really nice guy" },
+				{ "text": "Joe had been very nice to her" },
+				{ "text": "that wasn't very nice of her" }
+			],
+			"id": "m_en_gbus0690430.010",
+			"shortDefinitions": ["kind"],
+			"synonyms": [
+				{ "language": "en", "text": "pleasant" },
+				{ "language": "en", "text": "likeable" },
+				{ "language": "en", "text": "agreeable" },
+				{ "language": "en", "text": "personable" },
+				{ "language": "en", "text": "charming" },
+				{ "language": "en", "text": "delightful" },
+				{ "language": "en", "text": "amiable" },
+				{ "language": "en", "text": "affable" },
+				{ "language": "en", "text": "friendly" },
+				{ "language": "en", "text": "kindly" },
+				{ "language": "en", "text": "genial" },
+				{ "language": "en", "text": "congenial" },
+				{ "language": "en", "text": "good-natured" },
+				{ "language": "en", "text": "engaging" },
+				{ "language": "en", "text": "gracious" },
+				{ "language": "en", "text": "sympathetic" },
+				{ "language": "en", "text": "understanding" },
+				{ "language": "en", "text": "compassionate" },
+				{ "language": "en", "text": "good" }
+			],
+			"thesaurusLinks": [
+				{ "entry_id": "nice", "sense_id": "t_en_gb0009984.002" }
+			]
+		},
+		{
+			"definitions": ["not good; unpleasant"],
+			"examples": [
+				{
+					"text": "that's a nice way to come into my kitchen—no greeting!"
+				}
+			],
+			"id": "m_en_gbus0690430.011",
+			"registers": [{ "id": "ironic", "text": "Ironic" }],
+			"shortDefinitions": ["not good"]
+		}
+	]
+}

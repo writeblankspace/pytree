@@ -15,10 +15,16 @@ def search_dictionary(word: str) -> tuple:
 	json_response = r.json()
 
 	if type(json_response) == list:
-		# if there are multiple entries, return the first one
-		json_response = json_response[0]
-	
-	result = (json_response, r.status_code)
+		# if there are multiple entries, flatten the list
+		flattened = {}
+		flattened.update(json_response[0])
+
+		# for the rest of the entires, add their meanings to the flattened entry
+		for entry in json_response[1:]:
+			for meaning in entry["meanings"]:
+				flattened["meanings"].append(meaning)
+		
+	result = (flattened, r.status_code)
 
 	return result
 
@@ -47,6 +53,10 @@ def dictionary_embed(dictionary: dict, meaning_index: int, definition_index: int
 
 	synonyms: list = meaning["synonyms"] + meaning["definitions"][definition_index]["synonyms"]
 	antonyms: list = meaning["antonyms"] + meaning["definitions"][definition_index]["antonyms"]
+
+	# get the unique ones
+	synonyms = list(set(synonyms))
+	antonyms = list(set(antonyms))
 
 	example: str = meaning["definitions"][definition_index].get("example")
 

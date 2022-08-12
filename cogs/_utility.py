@@ -53,8 +53,18 @@ class utility(commands.Cog):
 		"""
 		Creates a screenshot of the given url. """
 		await interaction.response.defer(ephemeral=True)
+
 		screenshot = f"https://image.thum.io/get/width/1200/noanimate/{url}"
-		await interaction.followup.send(f"**This may take a while to load.**\n{screenshot}")
+
+		embed = discord.Embed(
+			title=f"{theme.loader} Generating screenshot",
+			description=f"Please wait. This may take a while.\n[Original URL]({url}) | [Screenshot URL]({screenshot})",
+			colour=theme.colours.primary
+		)
+
+		embed.set_image(url=screenshot)
+		
+		await interaction.followup.send(embed=embed)
 	
 	@screenshot.autocomplete("url")
 	async def screenshot_autocomplete(self, interaction: discord.Interaction, current: str):

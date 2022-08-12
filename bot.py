@@ -27,7 +27,7 @@ initial_extensions = [
 	"cogs._utility",
 	"cogs._admin",
 	"cogs._loop",
-	"cogs.dictionary",
+	"cogs.search",
 	"cogs.levelling",
 	"cogs.economy",
 	"cogs.starboard",

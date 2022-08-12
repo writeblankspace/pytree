@@ -9,7 +9,7 @@ from f.dictionary import *
 import traceback
 import asyncio
 
-class Dictionary(commands.Cog):
+class Search(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
 	
@@ -196,4 +196,4 @@ class Dictionary(commands.Cog):
 			await interaction.edit_original_response(embed=embed)
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Dictionary(bot))
+    await bot.add_cog(Search(bot))

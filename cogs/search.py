@@ -15,7 +15,7 @@ class Search(commands.Cog):
 	
 	group = app_commands.Group(name="search", description="Search commands: search the web from the bot")
 
-	class OdDropdown(discord.ui.Select):
+	class DictDropdown(discord.ui.Select):
 		def __init__(self, dictionary: dict):
 			self.dictionary = dictionary
 
@@ -93,12 +93,12 @@ class Search(commands.Cog):
 			
 			await interaction.edit_original_response(embed=embed, view=self.view)
 
-	class OdDropdownView(discord.ui.View):
-		def __init__(self, OdDropdown, dictionary: dict):
+	class DictDropdownView(discord.ui.View):
+		def __init__(self, DictDropdown, dictionary: dict):
 			super().__init__()
 
 			# Adds the dropdown to our view object.
-			self.add_item(OdDropdown(dictionary))
+			self.add_item(DictDropdown(dictionary))
 
 			# the entire result
 			self.dictionary: dict = dictionary
@@ -190,7 +190,7 @@ class Search(commands.Cog):
 		code: int = results[1]
 
 		if code == 200:
-			view = self.OdDropdownView(self.OdDropdown, dictionary)
+			view = self.DictDropdownView(self.DictDropdown, dictionary)
 
 			await interaction.edit_original_response(embed=None, view=view)
 			view.message = await interaction.original_response()

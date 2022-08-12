@@ -40,7 +40,7 @@ class Search(commands.Cog):
 				# make the definition < 100 characters
 				if len(description) > 100:
 					# get first 97 characters
-					description = definition[:97] + "..."
+					description = description[:97] + "..."
 				
 				options.append(
 					discord.SelectOption(

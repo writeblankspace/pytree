@@ -44,6 +44,12 @@ class Economy(commands.Cog):
 			# disable some buttons
 			self.disable_buttons()
 		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
+		
 		def disable_buttons(self):
 			all_buttons = self.children
 			equip = discord.utils.get(all_buttons, custom_id="equip")
@@ -323,7 +329,7 @@ class Economy(commands.Cog):
 				sellable = sellable
 			)
 
-			await interaction.response.edit_message(
+			view.message = await interaction.response.edit_message(
 				embed = embed,
 				view = view
 			)
@@ -341,6 +347,12 @@ class Economy(commands.Cog):
 				self.add_item(
 					InventoryDropdown(currency, False, user, inventorylist, ephemeral, ItemActions)
 				)
+		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 
 	@group.command(name="stats")
 	@app_commands.describe(
@@ -436,7 +448,7 @@ class Economy(commands.Cog):
 				ephemeral = ephemeral,
 				ItemActions = self.ItemActions
 			)
-			await interaction.followup.send(embed=embed, view=view)
+			view.message = await interaction.followup.send(embed=embed, view=view)
 
 	# leaderboard
 	class LeaderboardView(discord.ui.View):
@@ -460,6 +472,12 @@ class Economy(commands.Cog):
 
 			super().__init__() 
 			# apparently I must do this or stuff breaks
+		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 
 		def generate_leaderboard(self, guild: discord.Guild) -> list:
 			"""
@@ -696,7 +714,7 @@ class Economy(commands.Cog):
 		if lb.max_per_page > len(lb.leaderboard):
 			rightbutton.disabled = True
 
-		await interaction.followup.send(
+		lb.message = await interaction.followup.send(
 			embed = embed,
 			view = lb
 		)
@@ -793,6 +811,12 @@ class Economy(commands.Cog):
 			balancebutton = discord.utils.get(all_buttons, custom_id="balance")
 			self.remove_item(buybutton)
 			self.remove_item(balancebutton)
+		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 
 		@discord.ui.button(label='buy', style=discord.ButtonStyle.primary, custom_id="buy", row=2)
 		async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -884,7 +908,7 @@ class Economy(commands.Cog):
 
 		view = self.ShopDropView(self.ShopDrop, self.currency)
 
-		await interaction.followup.send(embed=embed, view=view)
+		view.message = await interaction.followup.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Economy(bot))

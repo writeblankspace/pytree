@@ -111,6 +111,12 @@ class Search(commands.Cog):
 
 			self.remove_item(self.left)
 			self.remove_item(self.right)
+		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 
 		def disable_buttons(self):
 			senses: list = self.senses
@@ -187,6 +193,7 @@ class Search(commands.Cog):
 			view = self.OdDropdownView(self.OdDropdown, dictionary)
 
 			await interaction.edit_original_response(embed=None, view=view)
+			view.message = await interaction.original_response()
 		else:
 			embed = discord.Embed(
 				title = dictionary["title"],

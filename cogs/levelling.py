@@ -254,6 +254,12 @@ class Levelling(commands.Cog):
 
 			super().__init__() 
 			# apparently I must do this or stuff breaks
+		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 
 		def generate_leaderboard(self, guild: discord.Guild) -> list:
 			"""
@@ -508,7 +514,7 @@ class Levelling(commands.Cog):
 		if lb.max_per_page > len(lb.leaderboard):
 			rightbutton.disabled = True
 
-		await interaction.followup.send(
+		lb.message = await interaction.followup.send(
 			embed = embed,
 			view = lb
 		)
@@ -563,6 +569,12 @@ class Levelling(commands.Cog):
 					ephemeral = ephemeral
 				)
 			)
+		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 
 	@group.command(name="forest")
 	@app_commands.describe(
@@ -648,7 +660,7 @@ class Levelling(commands.Cog):
 				ephemeral = ephemeral
 			)
 
-			await interaction.followup.send(embed=embed, view=view)
+			view.message = await interaction.followup.send(embed=embed, view=view)
 		else:
 			# imagine viewing a bot's forest
 			await interaction.response.defer(ephemeral=True)

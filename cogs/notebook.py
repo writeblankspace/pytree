@@ -77,6 +77,12 @@ class Notebook(commands.Cog):
 			super().__init__()
 
 			self.disable_buttons() # disable the buttons if necessary
+
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 		
 		def notebook(self) -> list:
 			guildid = str(self.guild.id)
@@ -259,7 +265,7 @@ class Notebook(commands.Cog):
 
 		view = self.NBNav(interaction, currentpage, self.EditModal)
 
-		await interaction.followup.send(embed=embed, view=view)
+		view.message = await interaction.followup.send(embed=embed, view=view)
 
 	class QuicknoteModal(discord.ui.Modal, title="Quick note"):
 		def __init__(self, interaction: discord.Interaction):

@@ -4,6 +4,7 @@
 	- [Counter buttons](#counter-buttons)
 	- [Dropdowns](#dropdowns)
 	- [Modals](#modals)
+	- [Disable on timeout](#disable-on-timeout)
 
 - [Basics](.basics.md)
 
@@ -126,4 +127,41 @@ async def feedback(interaction: discord.Interaction):
     # Since modals require an interaction, they cannot be done as a response to a text command.
     # They can only be done as a response to either an application command or a button press.
     await interaction.response.send_modal(Feedback())
+```
+
+## Disable on timeout
+
+```py
+class MyView(discord.ui.View):
+    async def on_timeout(self) -> None:
+        for item in self.children:
+            item.disabled = True
+        
+        await self.message.edit(view=self)
+
+    @discord.ui.button(label='Example')
+    async def example_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message('Hello!', ephemeral=True)
+
+@bot.command()
+async def timeout_example(ctx):
+    """An example to showcase disabling buttons on timing out"""
+    view = MyView()
+    # Step 1
+    view.message = await ctx.send('Press me!', view=view)
+```
+
+Application commands do not return a message when you respond with InteractionResponse.send_message(), therefore in order to reliably do this we should retrieve the message using Interaction.original_response().
+
+Putting it all together, using the previous view definition:
+
+```py
+@tree.command()
+async def more_timeout_example(interaction):
+    """Another example to showcase disabling buttons on timing out"""
+    view = MyView()
+    await interaction.response.send_message('Press me!', view=view)
+
+    # Step 1
+    view.message = await interaction.original_response()
 ```

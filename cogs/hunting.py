@@ -27,6 +27,12 @@ class Hunting(commands.Cog):
 			self.bugs_killed = 0
 
 			super().__init__()
+		
+		async def on_timeout(self) -> None:
+			for item in self.children:
+				item.disabled = True
+
+			await self.message.edit(view=self)
 
 		def use_item(self, interaction: discord.Interaction, itemname: str):
 			item = shopitems[itemname]
@@ -176,6 +182,8 @@ class Hunting(commands.Cog):
 		view = self.BugHunt(user, kill_multi, embed)
 
 		await interaction.edit_original_response(view=view, embed=embed)
+
+		view.message = await interaction.original_response()
 
 		await asyncio.sleep(15)
 

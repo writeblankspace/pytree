@@ -16,75 +16,55 @@ class Search(commands.Cog):
 	group = app_commands.Group(name="search", description="Search commands: search the web from the bot")
 
 	class OdDropdown(discord.ui.Select):
-		def __init__(self, lemmas_results: list):
-			self.lemmas_results = lemmas_results
+		def __init__(self, dictionary: dict):
+			self.dictionary = dictionary
 
 			options = []
 
-			# pick the first result
-			result: dict = self.lemmas_results[0]
-			lexicalEntries: list = result["lexicalEntries"]
+			meanings: list = dictionary["meanings"] # list of dicts
+			word: str = dictionary["word"]
 
-			for entry in lexicalEntries:
-				og_inflection_of: list = entry["inflectionOf"]
-				inflection_of: list = []
+			for meaning in meanings:
+				part_of_speech = meaning["partOfSpeech"]
+				definitions = meaning["definitions"]
+				definition = definitions[0]["definition"]
 
-				for i in og_inflection_of:
-					inflection_of.append(i["text"])
+				count = len(definitions)
+				if count > 1:
+					count = f"({count} results) "
+				else:
+					count = f"({count} result) "
+
+				description = f"{count}{definition}"
+				# make the definition < 100 characters
+				if len(description) > 100:
+					# get first 97 characters
+					description = definition[:97] + "..."
 				
-				language = entry["language"]
-				lexicalCategory = entry["lexicalCategory"]["text"]
-
-				myod = Oxford_Search(inflection_of[0], language)
-
-				definition = ""
-				while definition == "":
-					for result in myod.dictionary.get("results"):
-						lexicalEntries = result["lexicalEntries"][0]
-						if lexicalEntries["lexicalCategory"]["text"].lower() == lexicalCategory.lower():
-							definition = lexicalEntries["entries"][0]["senses"][0]["shortDefinitions"][0]
-					
-					if definition == "":
-						# this wouldn't work so move on to the next entry
-						definition = None
-
-				if definition != None:
-					options.append(
-						discord.SelectOption(
-							label = f"{lexicalCategory.lower()}: {', '.join(inflection_of)}",
-							description=f'{definition}'
-						)
+				options.append(
+					discord.SelectOption(
+						label = f"[{part_of_speech.lower()}] {word}",
+						description=description
 					)
+				)
 
 			super().__init__(placeholder='Select a definition...', min_values=1, max_values=1, options=options)
 
 		async def callback(self, interaction: discord.Interaction):
 			await interaction.response.defer()
 			choice: str = self.values[0]
-			lexicalCategory: str = choice.split(': ')[0]
-			word: str = choice.split(': ')[1]
 
-			# find out which entry it is
-			myod = Oxford_Search(word)
+			# get what's in the brackets
+			part_of_speech = choice.split("]")[0][1:]
+			# get what's after the brackets
+			word: str = choice.split('] ')[1]
 
-			for result in myod.dictionary.get("results"):
-				lexicalEntries: dict = result["lexicalEntries"][0]
-				if lexicalEntries["lexicalCategory"]["text"].lower() == lexicalCategory.lower():
-					entry: dict = lexicalEntries["entries"][0]
-			
-			index = 0
-
+			# get the embed
 			embed = dictionary_embed(
-				word = word,
-				lexicalCategory = lexicalCategory,
-				entry = entry,
-				index = index,
+				dictionary = self.dictionary,
+				part_of_speech = part_of_speech,
+				definition_index = 0
 			)
-
-			self.view.word = word
-			self.view.lexicalCategory = lexicalCategory
-			self.view.entry = entry
-			self.view.index = index
 			
 			all_buttons = self.view.children
 			# get button
@@ -93,28 +73,45 @@ class Search(commands.Cog):
 			if left == None and right == None:
 				self.view.add_item(self.view.left)
 				self.view.add_item(self.view.right)
+			
+			self.view.part_of_speech = part_of_speech
+			# get the meaning
+			meanings: list = self.dictionary["meanings"]
+			
+			# find the meaning where the part of speech is the same as the one we are looking for
+			for meaning in meanings:
+				if meaning["partOfSpeech"] == part_of_speech:
+					meaning: dict = meaning
+					break
+
+			self.view.senses = meaning["definitions"]
+			self.view.index = 0
 
 			self.view.disable_buttons()
 			
 			await interaction.edit_original_response(embed=embed, view=self.view)
 
 	class OdDropdownView(discord.ui.View):
-		def __init__(self, OdDropdown, lemmas_results: list):
+		def __init__(self, OdDropdown, dictionary: dict):
 			super().__init__()
 
 			# Adds the dropdown to our view object.
-			self.add_item(OdDropdown(lemmas_results))
-		
-			self.word = None
-			self.lexicalCategory = None
-			self.entry = None
-			self.index = None
+			self.add_item(OdDropdown(dictionary))
+
+			# the entire result
+			self.dictionary: dict = dictionary
+			# part of speech
+			self.part_of_speech: str = None
+			# the different definitions in one part of speech
+			self.senses: list = None
+			# the index of the current sense
+			self.index: int = None
 
 			self.remove_item(self.left)
 			self.remove_item(self.right)
 
 		def disable_buttons(self):
-			senses: list = self.entry["senses"]
+			senses: list = self.senses
 
 			all_buttons = self.children
 
@@ -133,10 +130,9 @@ class Search(commands.Cog):
 
 		def get_embed(self, index: int):
 			embed = dictionary_embed(
-				word=self.word,
-				lexicalCategory=self.lexicalCategory,
-				entry=self.entry,
-				index=index
+				dictionary = self.dictionary,
+				part_of_speech = self.part_of_speech,
+				definition_index = index,
 			)
 
 			return embed
@@ -163,34 +159,36 @@ class Search(commands.Cog):
 
 	@group.command(name="dictionary")
 	@app_commands.describe(
-		word = "the word to look up"
+		word = "the word to look up",
+		ephemeral = "whether or not others should see the bot's reply"
 	)
 	async def dictionary(self, interaction: discord.Interaction, word: str, ephemeral: bool = True):
 		"""
-		Searches the Oxford Dictionary for a word."""
+		Searches the dictionary for a word."""
 		await interaction.response.defer(ephemeral=ephemeral)
 
 		embed = discord.Embed(
-			title = f"{theme.loader} Oxford Dictionary: {word.lower()}",
+			title = f"{theme.loader} Dictionary: {word.lower()}",
 			description = f"Please wait. This may take a while.",
 			color = theme.colours.secondary
 		)
 
 		await interaction.followup.send(embed=embed)
 
-		odl = Oxford_Search_Lemmas(word)
+		results: tuple = search_dictionary(word)
 
-		if odl.lemmas_code == 200:
-			lemmas = odl.lemmas
-			lemmas_results: list = lemmas.get("results") # list of dicts
+		# get first item in the result tuple
+		dictionary: dict = results[0]
+		code: int = results[1]
 
-			view = self.OdDropdownView(self.OdDropdown, lemmas_results)
+		if code == 200:
+			view = self.OdDropdownView(self.OdDropdown, dictionary)
 
 			await interaction.edit_original_response(embed=None, view=view)
 		else:
 			embed = discord.Embed(
-				title = f"'{word.lower()}' not found",
-				description = "```\n" + f"Error {odl.lemmas_code}: {odl.lemmas['error']}```",
+				title = dictionary["title"],
+				description = f"{dictionary['message']}\n{dictionary['resolution']}",
 				colour = theme.colours.red
 			)
 			await interaction.edit_original_response(embed=embed)

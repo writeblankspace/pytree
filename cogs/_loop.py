@@ -13,7 +13,7 @@ class Loops(commands.Cog):
 	def cog_unload(self):
 		self.status.cancel()
 
-	@tasks.loop(seconds=60.0)
+	@tasks.loop(seconds=13.0)
 	async def status(self):
 		# change status
 		data = db.read()

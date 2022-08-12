@@ -209,7 +209,7 @@ class Levelling(commands.Cog):
 				discrim = member.discriminator,
 				other = f"lvl {currentlevel} | {currentxp_embed}/{xp_needed_embed} xp | #{index}",
 				treenumber = tree,
-				color = (88, 101, 242),
+				color = (181, 128, 91),
 				progress = round(progresspercent)
 			)
 

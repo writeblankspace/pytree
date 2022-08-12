@@ -24,6 +24,7 @@ class Search(commands.Cog):
 			meanings: list = dictionary["meanings"] # list of dicts
 			word: str = dictionary["word"]
 
+			i = 1
 			for meaning in meanings:
 				part_of_speech = meaning["partOfSpeech"]
 				definitions = meaning["definitions"]
@@ -43,10 +44,11 @@ class Search(commands.Cog):
 				
 				options.append(
 					discord.SelectOption(
-						label = f"[{part_of_speech.lower()}] {word}",
+						label = f"[{i}] [{part_of_speech.lower()}] {word}",
 						description=description
 					)
 				)
+				i += 1
 
 			super().__init__(placeholder='Select a definition...', min_values=1, max_values=1, options=options)
 
@@ -54,15 +56,18 @@ class Search(commands.Cog):
 			await interaction.response.defer()
 			choice: str = self.values[0]
 
-			# get what's in the brackets
-			part_of_speech = choice.split("]")[0][1:]
+			# [1] [part_of_speech] word
+			# get the index
+			meaning_index = int(choice.split("]")[0].split("[")[1]) - 1
+			# get the part of speech 
+			part_of_speech = choice.split("]")[1].split("[")[1]
 			# get what's after the brackets
-			word: str = choice.split('] ')[1]
+			word: str = choice.split('] ')[2]
 
 			# get the embed
 			embed = dictionary_embed(
 				dictionary = self.dictionary,
-				part_of_speech = part_of_speech,
+				meaning_index = meaning_index,
 				definition_index = 0
 			)
 			
@@ -74,15 +79,12 @@ class Search(commands.Cog):
 				self.view.add_item(self.view.left)
 				self.view.add_item(self.view.right)
 			
-			self.view.part_of_speech = part_of_speech
+			self.view.meaning_index = meaning_index
 			# get the meaning
 			meanings: list = self.dictionary["meanings"]
 			
 			# find the meaning where the part of speech is the same as the one we are looking for
-			for meaning in meanings:
-				if meaning["partOfSpeech"] == part_of_speech:
-					meaning: dict = meaning
-					break
+			meaning: dict = meanings[meaning_index]
 
 			self.view.senses = meaning["definitions"]
 			self.view.index = 0
@@ -101,7 +103,7 @@ class Search(commands.Cog):
 			# the entire result
 			self.dictionary: dict = dictionary
 			# part of speech
-			self.part_of_speech: str = None
+			self.meaning_index: int = None
 			# the different definitions in one part of speech
 			self.senses: list = None
 			# the index of the current sense
@@ -131,7 +133,7 @@ class Search(commands.Cog):
 		def get_embed(self, index: int):
 			embed = dictionary_embed(
 				dictionary = self.dictionary,
-				part_of_speech = self.part_of_speech,
+				meaning_index = self.meaning_index,
 				definition_index = index,
 			)
 

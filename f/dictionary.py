@@ -22,7 +22,7 @@ def search_dictionary(word: str) -> tuple:
 
 	return result
 
-def dictionary_embed(dictionary: dict, part_of_speech: str, definition_index: int) -> discord.Embed:
+def dictionary_embed(dictionary: dict, meaning_index: int, definition_index: int) -> discord.Embed:
 	word = dictionary["word"]
 
 	# get the phonetic text
@@ -39,13 +39,11 @@ def dictionary_embed(dictionary: dict, part_of_speech: str, definition_index: in
 	# get the meaning
 	meanings: list = dictionary["meanings"]
 	
-	# find the meaning where the part of speech is the same as the one we are looking for
-	for meaning in meanings:
-		if meaning["partOfSpeech"] == part_of_speech:
-			meaning: dict = meaning
-			break
+	meaning: dict = meanings[meaning_index]
 	
 	definition: str = meaning["definitions"][definition_index]["definition"]
+
+	part_of_speech: str = meaning["partOfSpeech"]
 
 	synonyms: list = meaning["synonyms"] + meaning["definitions"][definition_index]["synonyms"]
 	antonyms: list = meaning["antonyms"] + meaning["definitions"][definition_index]["antonyms"]

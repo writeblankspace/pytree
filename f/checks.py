@@ -35,7 +35,7 @@ def has_enough_money(amount: int):
 			embed = discord.Embed(
 					title = f"You don't have enough money to do that.",
 					description = "\n".join([f"You only have {balance} {currency}.",
-						f"You'll need {amount - balance} more to run this command."]),
+						f"You'll need {amount - balance} {currency} more to run this command."]),
 					color = theme.colours.red
 				)
 			raise CustomError(embed)

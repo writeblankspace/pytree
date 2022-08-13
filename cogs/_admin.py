@@ -19,7 +19,7 @@ class Admin(commands.Cog):
 		content = "the content to dump into the channel",
 		attachments = "the attachments to dump into the channel"
 		)
-	@owner_only
+	@owner_only()
 	async def dump(self, interaction: discord.Interaction, content: str = None, attachments: discord.Attachment = None) -> None:
 		"""
 		[RESTRICTED] Dumps the given content to the dump channel."""
@@ -60,7 +60,7 @@ class Admin(commands.Cog):
 		await interaction.followup.send(embed=embed)
 
 	@group.command(name="archivemonth")
-	@owner_only
+	@owner_only()
 	@app_commands.describe(
 		date = "the archive's id in the format YYYY/MM"
 	)

@@ -6,15 +6,16 @@ from f.stuff.shopitems import shopitems
 from db.db import db
 import asyncio
 from f.__index__ import *
+import random
 
 
-class Hunting(commands.Cog):
+class Minigames(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
 		self.currency = "⚇"
 
 	group = app_commands.Group(
-		name="bugs", description="Bug-hunting commands: hunt bugs to earm xp and money.")
+		name="minigames", description="Mingame commands: gain money by playing minigames")
 
 	class BugHunt(discord.ui.View):
 		def __init__(self, init_user: discord.User, multi: int, embed: discord.Embed):
@@ -302,6 +303,119 @@ class Hunting(commands.Cog):
 
 		await interaction.edit_original_response(view=None, embed=embed)
 
+	@group.command(name="roll")
+	async def roll(self, interaction: discord.Interaction) -> None:
+		"""
+		Rolling more than 2 numbers of the same kind gives you money."""
+		await interaction.response.defer(ephemeral=False)
+
+		def r():
+			return random.randint(1, 9)
+		
+		rolled = []
+
+		for i in range(4):
+			rolled.append(r())
+		
+		emojis = ["0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣"]
+
+		rolled_str = ""
+
+		for i in rolled:
+			rolled_str += emojis[i]
+
+		embed = discord.Embed(
+			title = "Rolling the machine...",
+		)
+
+		guildid = str(interaction.guild.id)
+		userid = str(interaction.user.id)
+		db.exists([guildid, userid, "$$$"], True, 0)
+		db.exists([guildid, userid, "rolls"], True, 0)
+
+		data = db.read()
+
+		data[guildid][userid]["rolls"] += 1
+		rolls = data[guildid][userid]["rolls"]
+
+		# check for how many duplicates there are
+		rolledset = set(rolled)
+		duplicates = len(rolled) - len(rolledset)
+
+		# eg rolled = [1, 1, 1, 1], duplicates = 3
+		# eg rolled = [1, 1, 1, 2], duplicates = 2
+		# eg rolled = [1, 1, 2, 3], duplicates = 1
+		# eg rolled = [1, 2, 3, 4], duplicates = 0
+
+		# eg rolled = [1, 1, 2, 2], duplicates = 2
+		
+		# if all the numbers are the same, you win!
+
+		rolled_int = int(f"{rolled[0]}{rolled[1]}{rolled[2]}{rolled[3]}")
+
+		if rolled_int == int(interaction.user.discriminator):
+			win = True
+			# cool prize
+			prize = int(rolled_int / 5)
+			description = "Your disciminator!"
+			embed.color = theme.colours.green
+
+		if rolled_int == 1989:
+			win = True
+			# cool prize
+			prize = 1989
+			description = "Special 1989!"
+			embed.color = theme.colours.green
+
+		elif duplicates == 3:
+			win = True
+			# get the first 3 characters
+			prize = int(rolled_int / 10)
+			description = "Four-of-a-kind!"
+			embed.color = theme.colours.green
+
+		elif duplicates == 2:
+			win = True
+			# minor prize (1111 = 4)
+			# find the occurences of the first number
+			occurences = rolled.count(rolled[0])
+			if occurences == 2:
+				description = "Double-two-of-a-kind!"
+			else:
+				description = "Three-of-a-kind!"
+			prize = int(rolled_int / 300)
+			embed.color = theme.colours.primary
+
+		else:
+			win = False
+			data[guildid][userid]["$$$"] -= 2
+			# no prize rip
+			prize = 0
+			description = "Better luck next time!"
+			embed.color = theme.colours.red
+		
+		if prize <= 0 and win:
+			# sum of items in rolled
+			prize = sum(rolled)
+		
+		embed.description = f"{rolled_str} {description}"
+		
+		if prize > 0:
+			embed.set_footer(
+				text = f"You won {prize} {self.currency}  •  roll #{rolls}"
+			)
+		else:
+			embed.set_footer(
+				text = f"You lost 2 {self.currency}  •  roll #{rolls}"
+			)
+		
+		data[guildid][userid]["$$$"] += prize
+		db.write(data)
+
+		await interaction.followup.send(embed=embed)
+
+
+
 
 async def setup(bot: commands.Bot) -> None:
-	await bot.add_cog(Hunting(bot))
+	await bot.add_cog(Minigames(bot))

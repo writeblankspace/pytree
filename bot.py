@@ -32,7 +32,7 @@ initial_extensions = [
 	"cogs.economy",
 	"cogs.starboard",
 	"cogs.notebook",
-	"cogs.hunting"
+	"cogs.minigames"
 ]
 
 # Discord Intents settings

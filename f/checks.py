@@ -6,11 +6,21 @@ import discord
 
 currency = "⚇"
 
-async def owner_only(interaction: Interaction):
-    return await interaction.client.is_owner(interaction.user)
-
-class TooBroke(CheckFailure):
+class CustomError(CheckFailure):
 	pass
+
+def owner_only():
+	async def actual_check(interaction: Interaction):
+		is_owner =  await interaction.client.is_owner(interaction.user)
+		if not is_owner:
+			embed = discord.Embed(
+				title = "Restricted Command", 
+				description = "This command is restricted to the bot owner only.",
+				colour = theme.colours.red
+			)
+			raise CustomError(embed)
+		return True
+	return app_commands.check(actual_check)
 
 def has_enough_money(amount: int):
 	async def actual_check(interaction: Interaction):
@@ -28,7 +38,7 @@ def has_enough_money(amount: int):
 						f"You'll need {amount - balance} more to run this command."]),
 					color = theme.colours.red
 				)
-			raise TooBroke(embed)
+			raise CustomError(embed)
 		return True
 	return app_commands.check(actual_check)
 

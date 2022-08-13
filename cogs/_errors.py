@@ -12,7 +12,7 @@ class Errors(commands.Cog):
 
 	# the global error handler
 	async def on_app_command_error(self, interaction: Interaction,error: AppCommandError):
-		if isinstance(error, TooBroke):
+		if isinstance(error, CustomError):
 			embed = error.args[0]
 			await interaction.response.send_message(embed=embed, ephemeral=True)
 		else:

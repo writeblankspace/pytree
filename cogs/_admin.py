@@ -19,7 +19,7 @@ class Admin(commands.Cog):
 		content = "the content to dump into the channel",
 		attachments = "the attachments to dump into the channel"
 		)
-	@app_commands.check(owner_only)
+	@owner_only
 	async def dump(self, interaction: discord.Interaction, content: str = None, attachments: discord.Attachment = None) -> None:
 		"""
 		[RESTRICTED] Dumps the given content to the dump channel."""
@@ -59,24 +59,8 @@ class Admin(commands.Cog):
 		# send message, delete after 5 seconds
 		await interaction.followup.send(embed=embed)
 
-	@dump.error
-	async def owneronly_error(
-		interaction: Interaction,
-		error: app_commands.AppCommandError
-	):
-		if isinstance(error, app_commands.CheckFailure):
-			embed = discord.Embed(
-				title = "Restricted Command", 
-				description = "This command is restricted to the bot owner only.",
-				colour = theme.colours.red
-			)
-			await interaction.response.send_message(embed=embed, ephemeral=True)
-			return
-
-		raise error
-
 	@group.command(name="archivemonth")
-	@app_commands.check(owner_only)
+	@owner_only
 	@app_commands.describe(
 		date = "the archive's id in the format YYYY/MM"
 	)

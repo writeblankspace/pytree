@@ -26,7 +26,7 @@ def search_dictionary(word: str) -> tuple:
 		
 		json_response = flattened
 		
-	result = (flattened, r.status_code)
+	result = (json_response, r.status_code)
 
 	return result
 

@@ -74,6 +74,8 @@ def dictionary_embed(dictionary: dict, meaning_index: int, definition_index: int
 	)
 
 	if example != None:
+		if "  " in example:
+			example = "\n".join(example.split("  "))
 		embed.add_field(
 			name="Example",
 			value=example,

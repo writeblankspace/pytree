@@ -24,6 +24,8 @@ def search_dictionary(word: str) -> tuple:
 			for meaning in entry["meanings"]:
 				flattened["meanings"].append(meaning)
 		
+		json_response = flattened
+		
 	result = (flattened, r.status_code)
 
 	return result

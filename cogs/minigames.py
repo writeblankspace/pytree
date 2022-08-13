@@ -304,6 +304,7 @@ class Minigames(commands.Cog):
 		await interaction.edit_original_response(view=None, embed=embed)
 
 	@group.command(name="roll")
+	@has_enough_money(2)
 	async def roll(self, interaction: discord.Interaction) -> None:
 		"""
 		Rolling more than 2 numbers of the same kind gives you money."""

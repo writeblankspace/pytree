@@ -32,11 +32,11 @@ psql -U postgres
     async def update(ctx, *, new_data: str):
         # Once the code exits the transaction block, changes made in the block are committed to the db
 
-        connection = await bot.db.acquire()
+        connection = await psql.db.acquire()
         async with connection.transaction():
             query = "UPDATE users SET data = $1 WHERE id = $2"
-            await bot.db.execute(query, new_data, ctx.author.id)
-        await bot.db.release(connection)
+            await psql.db.execute(query, new_data, ctx.author.id)
+        await psql.db.release(connection)
 
         await ctx.send("NEW:\n{}: {}".format(ctx.author.id, new_data))
 ```

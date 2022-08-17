@@ -25,13 +25,19 @@ def owner_only():
 
 def has_enough_money(amount: int):
 	async def actual_check(interaction: Interaction):
-		
-		guildid = str(interaction.guild.id)
-		userid = str(interaction.user.id)
-		db.exists([guildid, userid, "$$$"], True, 0)
-		data = db.read()
+		await psql.check_user(
+			interaction.user.id, interaction.guild.id
+		)
 
-		balance = data[guildid][userid]["$$$"]
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT balance FROM users
+			WHERE userid = $1 AND guildid = $2;
+			""",
+			interaction.user.id, interaction.guild.id
+		)
+
+		balance = row["balance"]
 
 		if balance < amount:
 			embed = discord.Embed(

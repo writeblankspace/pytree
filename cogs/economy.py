@@ -4,6 +4,7 @@ from discord.ext import commands
 from f.stuff.shopitems import shopitems
 from f.__index__ import *
 from db.db import db
+from db.sql import *
 
 class Economy(commands.Cog):
 	def __init__(self, bot: commands.Bot):

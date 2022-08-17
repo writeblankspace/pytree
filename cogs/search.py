@@ -7,6 +7,7 @@ from f.__index__ import *
 from f.githubissues import make_github_issue
 from f.dictionary import *
 import traceback
+from db.sql import *
 import asyncio
 
 class Search(commands.Cog):

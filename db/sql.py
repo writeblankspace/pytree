@@ -9,7 +9,7 @@ OWNERS = os.getenv('OWNERS').split(", ")
 PG_USER = os.getenv('PG_USER')
 PG_PW = os.getenv('PG_PW')
 
-class PGsql():
+class Psql():
 	def __init__(self):
 		self.db: asyncpg.Pool = None
 
@@ -85,4 +85,4 @@ class PGsql():
 			guildid
 		)
 
-pgsql = PGsql()
+psql = Psql()

@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import datetime
 from db.db import db
+from db.sql import *
 
 
 class Starboard(commands.Cog):

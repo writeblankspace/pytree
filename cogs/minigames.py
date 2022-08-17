@@ -7,6 +7,7 @@ from db.db import db
 import asyncio
 from f.__index__ import *
 import random
+from db.sql import *
 
 
 class Minigames(commands.Cog):

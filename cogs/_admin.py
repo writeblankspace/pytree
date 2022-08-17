@@ -6,6 +6,7 @@ from f.__index__ import *
 from db.db import db
 from cogs.levelling import Levelling
 import time
+from db.sql import *
 
 
 class Admin(commands.Cog):

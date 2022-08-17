@@ -91,7 +91,7 @@ async def main():
 
 		print(f"{b}{g}✅ SUCCESS: {w}{len(initial_extensions)} extensions loaded")
 
-		await pgsql.init_db()
+		await psql.init_db()
 		print(f"{b}{g}✅ SUCCESS: {w}Database initialized")
 
 		# start the bot

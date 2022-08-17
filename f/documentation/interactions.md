@@ -6,7 +6,7 @@
 	- [Modals](#modals)
 	- [Disable on timeout](#disable-on-timeout)
 
-- [Basics](.basics.md)
+- [Basics](.basics.md) | [Interactions](interactions.md) | [SQL](sql.md)
 
 ## Counter buttons
 

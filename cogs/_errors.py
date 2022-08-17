@@ -3,6 +3,7 @@ import discord
 from discord.app_commands import AppCommandError
 from discord.ext import commands
 from f.__index__ import *
+from db.sql import *
 
 
 class Errors(commands.Cog):

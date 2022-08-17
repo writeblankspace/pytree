@@ -6,6 +6,7 @@ from db.db import db
 from PIL import *
 import os
 from io import BytesIO
+from db.sql import *
 
 class Levelling(commands.Cog):
 	def __init__(self, bot: commands.Bot):

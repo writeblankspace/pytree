@@ -4,6 +4,7 @@ from discord.ext import commands
 from db.db import db
 from f.__index__ import *
 import traceback
+from db.sql import *
 
 class Notebook(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:

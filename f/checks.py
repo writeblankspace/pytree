@@ -1,6 +1,7 @@
 from discord import app_commands, Interaction
 from discord.app_commands import CheckFailure
 from db.db import db
+from db.sql import *
 from f.__index__ import theme
 import discord
 
@@ -24,6 +25,7 @@ def owner_only():
 
 def has_enough_money(amount: int):
 	async def actual_check(interaction: Interaction):
+		
 		guildid = str(interaction.guild.id)
 		userid = str(interaction.user.id)
 		db.exists([guildid, userid, "$$$"], True, 0)

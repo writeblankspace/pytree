@@ -7,6 +7,7 @@ from f.__index__ import *
 from f.githubissues import make_github_issue
 import traceback
 import asyncio
+from db.sql import *
 
 class utility(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:

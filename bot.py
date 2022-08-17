@@ -10,7 +10,9 @@ from f.templates import theme
 import random
 import typing
 import logging
+import asyncpg
 from colorama import Fore, Back, Style, init
+from db.sql import *
 
 init(autoreset=True)
 logging.basicConfig(level=logging.INFO)
@@ -61,8 +63,8 @@ async def on_ready():
 	b = Style.BRIGHT
 	g = Fore.GREEN
 	w = Fore.WHITE
-	print(f'{b}{g}{bot.user}{w} has connected to Discord! [{randcode}]')
-	print(f'{b}Successfully logged in and booted...!')
+	print(f'{b}{g}✅ {bot.user}{w} has connected to Discord! [{randcode}]')
+	print(f'{b}{g}✅ SUCCESS: {w}logged in and booted...!')
 
 	embed = discord.Embed(
 		title=f"Connected!",
@@ -78,10 +80,20 @@ keep_alive()
 
 async def main():
 	async with bot:
+		b = Style.BRIGHT
+		g = Fore.GREEN
+		w = Fore.WHITE
+
 		# load extensions
 		for extension in initial_extensions:
 			await bot.load_extension(extension)
-			print(f"{Style.BRIGHT}📥 {extension}")
+			print(f"{b}📥 {extension}")
+
+		print(f"{b}{g}✅ SUCCESS: {w}{len(initial_extensions)} extensions loaded")
+
+		await pgsql.init_db()
+		print(f"{b}{g}✅ SUCCESS: {w}Database initialized")
+
 		# start the bot
 		await bot.start(TOKEN)
 

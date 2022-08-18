@@ -74,33 +74,26 @@ class Admin(commands.Cog):
 		# the trees are archived into the archive channel to make the image links permanent
 
 		archivechannel = self.bot.get_channel(1001804054965518436)
-		guild = str(interaction.guild.id)
-
-		# get rid of errors
-		dbexists = db.exists([guild], False)
-		if not dbexists:
-			return
-		
-		data = db.read()
 
 		levellingfuncs = Levelling(self.bot)
 		find_next_level = levellingfuncs.find_next_level
 		findtree = levellingfuncs.findtree
 
 		await archivechannel.send(f"**Archiving trees for {date}**")
-		
-		# get all the trees
-		keys = data[guild].keys()
 
-		for key in keys:
-			userid = str(key)
+		rows: list = await psql.db.fetch(
+			"""--sql
+			SELECT userid, guildid, forest, xp FROM users
+			"""
+		)
 
-			db.exists([guild, userid, "forest", date], True, {})
-			data = db.read()
+		for row in rows:
+			row = dict(row)
+			userid: int = row['userid']
+			guildid: int = row['guildid']
+			forest: dict = psql.json_to_dict(row['forest'])
+			xp: int = row['xp']
 
-			user = data[guild][userid]
-
-			xp = user["xp"]
 			level = find_next_level(xp).currentlevel
 			tree = findtree(level)
 
@@ -120,19 +113,26 @@ class Admin(commands.Cog):
 			url = attachments[0].url
 			
 			# update the database
-			data[guild][userid]["forest"][f"{date}"]["tree"] = url
-			data[guild][userid]["forest"][f"{date}"]["xp"] = xp
-			data[guild][userid]["forest"][f"{date}"]["level"] = level
+			forest[f"{date}"] = {}
+			forest[f"{date}"]["tree"] = url
+			forest[f"{date}"]["xp"] = xp
+			forest[f"{date}"]["level"] = level
 
-			# reset the user's xp
-			data[guild][userid]["xp"] = 0
-			# unequip everything
-			data[guild][userid]["equipped"] = []
-
-			db.write(data)
+			# add the forest
+			# reset the xp and equipped
+			connection = await psql.db.acquire()
+			async with connection.transaction():
+				await psql.db.execute(
+					"""--sql
+					UPDATE users
+					SET forest = $1, xp = 0, equipped = ''
+					""",
+					psql.dict_to_json(forest)
+				)
+			await psql.db.release(connection)
 		
 		embed = discord.Embed(
-			title = f"Archived {date} for {len(keys)} members.",
+			title = f"Archived {date} for {len(rows)} members.",
 			color = theme.colours.green
 		)
 

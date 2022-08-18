@@ -1,5 +1,6 @@
 import asyncpg
 import os
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,6 +13,7 @@ PG_PW = os.getenv('PG_PW')
 class Psql():
 	def __init__(self):
 		self.db: asyncpg.Pool = None
+		self.asyncpg = asyncpg
 
 	async def init_db(self):
 		"""
@@ -84,5 +86,25 @@ class Psql():
 			ON CONFLICT DO NOTHING """,
 			guildid
 		)
+
+	def json_to_dict(self, json_str) -> dict:
+		"""
+		Converts a json string to a dictionary."""
+		return json.loads(json_str)
+	
+	def dict_to_json(self, dict_obj) -> str:
+		"""
+		Converts a dictionary to a json string."""
+		return json.dumps(dict_obj)
+	
+	def commasplit(self, string) -> list:
+		"""
+		Splits a string by commas and returns a list."""
+		return string.split(", ")
+	
+	def commasjoin(self, list_obj) -> str:
+		"""
+		Joins a list by commas and returns a string."""
+		return ", ".join(list_obj)
 
 psql = Psql()

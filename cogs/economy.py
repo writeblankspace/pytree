@@ -63,23 +63,33 @@ class Economy(commands.Cog):
 		async def equip(self, interaction: discord.Interaction, button: discord.ui.Button):
 			# assuming that this is the inventory
 			# and that the item is equippable
-			guildid = str(interaction.guild.id)
-			ownerid = str(self.owner.id)
+			guildid = interaction.guild.id
+			ownerid = self.owner.id
+
+			# check stuff to avoid errors
+			await psql.check_user(ownerid, guildid)
 
 			if interaction.user == self.owner:
 				# get the user's inventory
-				data = db.read()
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT inventory, equipped FROM users
+					WHERE userid = $1 and guildid = $2
+					""",
+					ownerid, guildid
+				)
+				inventory = psql.commasplit(row["inventory"])
+				equipped = psql.commasplit(row["equipped"])
 
 				# find the index of the item in the inventory
-				inventory = data[guildid][ownerid]["inventory"]
 				index = inventory.index(self.item)
 
 				# remove from the inventory
-				data[guildid][ownerid]["inventory"].pop(index)
+				inventory.pop(index)
 				# add to equipped
-				data[guildid][ownerid]["equipped"].append(self.item)
+				equipped.append(self.item)
 
-				if self.item in data[guildid][ownerid]["inventory"]:
+				if self.item in inventory:
 					# it's still in there, so can still be equipped and sold
 					self.equippable = True
 					self.sellable = True
@@ -91,7 +101,18 @@ class Economy(commands.Cog):
 				self.disable_buttons()
 
 				# save the data
-				db.write(data)
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET inventory = $1, equipped = $2
+						WHERE userid = $3 and guildid = $4
+						""",
+						psql.commasjoin(inventory), psql.commasjoin(equipped),
+						ownerid, guildid
+					)
+				await psql.db.release(connection)
 
 				# update the embed
 				title = self.embed.title
@@ -112,7 +133,7 @@ class Economy(commands.Cog):
 					description += "\n```\n" + f"{message}```"
 
 				# find out how many of the item is in the inventory now
-				inventory = data[guildid][ownerid]["inventory"]
+				inventory = inventory
 				if self.item in inventory:
 					intcount = inventory.count(self.item)
 					if intcount > 0:
@@ -143,25 +164,51 @@ class Economy(commands.Cog):
 		async def sell(self, interaction: discord.Interaction, button: discord.ui.Button):
 			# assuming that this is the inventory
 			# and that the item is equippable
-			guildid = str(interaction.guild.id)
-			ownerid = str(self.owner.id)
+			guildid = interaction.guild.id
+			ownerid = self.owner.id
+
+			# check stuff to avoid errors
+			await psql.check_user(ownerid, guildid)
 
 			if interaction.user == self.owner:
 				# get the user's inventory
-				data = db.read()
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT inventory, equipped, balance FROM users
+					WHERE userid = $1 and guildid = $2
+					""",
+					ownerid, guildid
+				)
+				
+				inventory = psql.commasplit(row["inventory"])
+				equipped = psql.commasplit(row["equipped"])
+				balance = row["balance"]
 
 				# find the index of the item in the inventory
-				inventory = data[guildid][ownerid]["inventory"]
 				index = inventory.index(self.item)
 
 				# remove from the inventory
-				data[guildid][ownerid]["inventory"].pop(index)
+				inventory.pop(index)
 				# instead of equipping, sell the item
 				price = self.price
 				# add to the user's balance
-				data[guildid][ownerid]["$$$"] += price
+				balance = row["balance"] + price
 
-				if self.item in data[guildid][ownerid]["inventory"]:
+				# save the data
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET inventory = $1, balance = $2
+						WHERE userid = $3 and guildid = $4
+						""",
+						psql.commasjoin(inventory), balance,
+						ownerid, guildid
+					)
+				await psql.db.release(connection)
+
+				if self.item in inventory:
 					# it's still in there, so can still be equipped and sold
 					if self.equippable != True:
 						self.equippable = True
@@ -173,9 +220,6 @@ class Economy(commands.Cog):
 					self.sellable = False
 				
 				self.disable_buttons()
-
-				# save the data
-				db.write(data)
 
 				# update the embed
 				title = self.embed.title
@@ -196,7 +240,7 @@ class Economy(commands.Cog):
 					description += "\n```\n" + f"{message}```"
 
 				# find out how many of the item is in the inventory now
-				inventory = data[guildid][ownerid]["inventory"]
+				inventory = inventory
 				if self.item in inventory:
 					intcount = inventory.count(self.item)
 					if intcount > 0:
@@ -383,21 +427,27 @@ class Economy(commands.Cog):
 			await interaction.followup.send(embed=embed)
 		else:
 			await interaction.response.defer(ephemeral=ephemeral)
-			guildid = str(interaction.guild.id)
-			memberid = str(member.id)
+			guildid = interaction.guild.id
+			memberid = member.id
 
-			# do the checks to avoid errors
-			db.exists([guildid, memberid, "$$$"], True, 0)
-			db.exists([guildid, memberid, "xp"], True, 0)
-			db.exists([guildid, memberid, "inventory"], True, [])
-			db.exists([guildid, memberid, "equipped"], True, [])
+			# avoid errors
+			await psql.check_user(memberid, guildid)
 
-			data = db.read()
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT balance, xp, inventory, equipped FROM users
+				WHERE userid = $1 AND guildid = $2
+				""",
+				memberid, guildid
+			)
 
-			coins = data[guildid][memberid]["$$$"]
-			xp = data[guildid][memberid]["xp"]
-			inventorylist = data[guildid][memberid]["inventory"]
-			equippedlist = data[guildid][memberid]["equipped"]
+			coins = row["balance"]
+			xp = row["xp"]
+			inventory = row["inventory"]
+			equipped = row["equipped"]
+
+			inventorylist = psql.commasplit(inventory)
+			equippedlist = psql.commasplit(equipped)
 
 			# sort lists alphabetically
 			inventorylist.sort()

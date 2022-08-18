@@ -100,11 +100,15 @@ class Psql():
 	def commasplit(self, string) -> list:
 		"""
 		Splits a string by commas and returns a list."""
-		return string.split(", ")
+		result =  string.split(", ")
+		if result == [""]:
+			result = []
+		return result
 	
 	def commasjoin(self, list_obj) -> str:
 		"""
 		Joins a list by commas and returns a string."""
-		return ", ".join(list_obj)
+		result = ", ".join(list_obj)
+		return result
 
 psql = Psql()

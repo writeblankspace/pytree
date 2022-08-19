@@ -159,19 +159,27 @@ class Levelling(commands.Cog):
 		if member.bot == False:
 			await interaction.response.defer(ephemeral=ephemeral)
 
-			guild = str(interaction.guild.id)
-			userid = str(member.id)
+			guildid = interaction.guild.id
+			userid = member.id
 
 			# avoid errors by checking if it exists
-			db.exists([guild, userid, "xp"], True, 0)
+			await psql.check_user(userid, guildid)
 
-			data = db.read()
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT xp FROM users
+				WHERE userid = $1 AND guildid = $2
+				""",
+				userid, guildid
+			)
+
+			xp = row['xp']
 
 			# just get some data yeah
-			nextlevel = self.find_next_level(data[guild][userid]["xp"])
+			nextlevel = self.find_next_level(xp)
 			xp_needed = nextlevel.xp_needed
 			prev_xp_needed = nextlevel.prev_xp_needed
-			currentxp = data[guild][userid]['xp']
+			currentxp = xp
 			currentlevel = nextlevel.currentlevel
 
 			# calculate the progress, eg 0.713
@@ -200,6 +208,7 @@ class Levelling(commands.Cog):
 			
 			# get the rank
 			lb = self.LeaderboardView(self.find_next_level, interaction.guild)
+			await lb.generate_leaderboard(interaction.guild)
 			leaderboard = lb.leaderboard
 
 			# get the author's index in the list of dicts
@@ -266,8 +275,6 @@ class Levelling(commands.Cog):
 			self.guild = guild
 			self.max_per_page = users_per_page
 
-			# generate the leaderboard
-			self.generate_leaderboard(self.guild)
 			# gonna dump stuff here
 			# ◁ ▷
 
@@ -280,7 +287,7 @@ class Levelling(commands.Cog):
 
 			await self.message.edit(view=self)
 
-		def generate_leaderboard(self, guild: discord.Guild) -> list:
+		async def generate_leaderboard(self, guild: discord.Guild) -> list:
 			"""
 			Gives a list of the leaderboard.
 			
@@ -299,20 +306,24 @@ class Levelling(commands.Cog):
 			```"""
 
 			# get the data
-			data = db.read()
-			guilddata = data[str(guild.id)]
+			rows = await psql.db.fetch(
+				"""--sql
+				SELECT userid, xp FROM users
+				WHERE guildid = $1;
+				""",
+				guild.id
+			)
 
-			for user in guilddata:
-				# get the user's data
-				userdata = guilddata[user]
+			for row in rows:
 				# get the user's level
-				xp = userdata["xp"]
+				userid = row['userid']
+				xp = row["xp"]
 				level = self.find_next_level(xp).currentlevel
 
 				# add the user to the leaderboard
 				self.leaderboard.append(
 					{
-						"member": guild.get_member(int(user)),
+						"member": guild.get_member(userid),
 						"xp": xp,
 						"level": level
 					}

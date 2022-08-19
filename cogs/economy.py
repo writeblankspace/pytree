@@ -522,6 +522,24 @@ class Economy(commands.Cog):
 			super().__init__() 
 			# apparently I must do this or stuff breaks
 		
+		def disable_buttons(self):
+			max_per_page = self.max_per_page
+			# update the buttons
+			all_buttons = self.children
+
+			leftbutton = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton = discord.utils.get(all_buttons, custom_id="right")
+
+			if self.leaderboard_index - max_per_page < 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+			
+			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
+		
 		async def on_timeout(self) -> None:
 			for item in self.children:
 				item.disabled = True
@@ -641,20 +659,7 @@ class Economy(commands.Cog):
 			)
 
 			# update the buttons
-			all_buttons = self.children
-
-			leftbutton = discord.utils.get(all_buttons, custom_id="left")
-			rightbutton = discord.utils.get(all_buttons, custom_id="right")
-
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-			
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons()
 
 			# Make sure to update the message with our updated selves
 			await interaction.response.edit_message(embed=embed, view=self)
@@ -681,20 +686,7 @@ class Economy(commands.Cog):
 			)
 
 			# update the buttons
-			all_buttons = self.children
-
-			leftbutton = discord.utils.get(all_buttons, custom_id="left")
-			rightbutton = discord.utils.get(all_buttons, custom_id="right")
-
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-			
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons()
 
 			# Make sure to update the message with our updated selves
 			await interaction.response.edit_message(embed=embed, view=self)
@@ -727,15 +719,7 @@ class Economy(commands.Cog):
 			leftbutton = discord.utils.get(all_buttons, custom_id="left")
 			rightbutton = discord.utils.get(all_buttons, custom_id="right")
 
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons
 
 
 			# Make sure to update the message with our updated selves
@@ -765,7 +749,7 @@ class Economy(commands.Cog):
 
 		rightbutton = discord.utils.get(all_buttons, custom_id="right")
 
-		if lb.max_per_page > len(lb.leaderboard):
+		if lb.max_per_page >= len(lb.leaderboard):
 			rightbutton.disabled = True
 
 		lb.message = await interaction.followup.send(

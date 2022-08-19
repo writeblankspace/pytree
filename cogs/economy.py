@@ -874,25 +874,46 @@ class Economy(commands.Cog):
 
 		@discord.ui.button(label='buy', style=discord.ButtonStyle.primary, custom_id="buy", row=2)
 		async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
+			guildid = interaction.guild.id
+			userid = interaction.user.id
 			itemdict = shopitems[self.shopitem]
 
 			price = itemdict["price"]
 
-			data = db.read()
+			await psql.check_user(userid, guildid)
 
-			cash = data[guildid][userid]["$$$"]
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT balance, inventory FROM users
+				WHERE guildid = $1 AND userid = $2
+				""",
+				guildid, userid
+			)
+
+			cash = row['balance']
+			inventory = psql.commasplit(row['inventory'])
 			
 			if cash >= price:
 				# remove the money and add the item
-				data[guildid][userid]["$$$"] -= price
-				data[guildid][userid]["inventory"].append(self.shopitem)
-				db.write(data)
+				cash -= price
+				inventory.append(self.shopitem)
+
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET balance = $1, inventory = $2
+						WHERE guildid = $3 AND userid = $4
+						""",
+						cash, psql.commasjoin(inventory),
+						guildid, userid
+					)
+				await psql.db.release(connection)
 
 				embed = discord.Embed(
 					title = f"You bought x1 of {self.shopitem}",
-					description = f"You now have {data[guildid][userid]['$$$']} {self.currency}",
+					description = f"You now have {cash} {self.currency}",
 					color = theme.colours.green
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -907,11 +928,19 @@ class Economy(commands.Cog):
 
 		@discord.ui.button(label='view my stats', style=discord.ButtonStyle.secondary, custom_id="balance", row=2)
 		async def balance(self, interaction: discord.Interaction, button: discord.ui.Button):
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
+			guildid = interaction.guild.id
+			userid = interaction.user.id
 
-			data = db.read()
-			balance = data[guildid][userid]["$$$"]
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT balance, inventory FROM users
+				WHERE guildid = $1 AND userid = $2
+				""",
+				guildid, userid
+			)
+
+			balance = row['balance']
+			inventory = psql.commasplit(row['inventory'])
 
 			itemdict = shopitems[self.shopitem]
 			price = itemdict["price"]
@@ -922,7 +951,6 @@ class Economy(commands.Cog):
 				colour = theme.colours.red
 			
 			# how many of this item do you have?
-			inventory = data[guildid][userid]["inventory"]
 			count = inventory.count(self.shopitem)
 
 			embed = discord.Embed(

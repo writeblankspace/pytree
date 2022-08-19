@@ -16,7 +16,7 @@ class Minigames(commands.Cog):
 		self.currency = "⚇"
 
 	group = app_commands.Group(
-		name="minigames", description="Mingame commands: gain money by playing minigames")
+		name="mg", description="Mingame commands: gain money by playing minigames")
 
 	class BugHunt(discord.ui.View):
 		def __init__(self, init_user: discord.User, multi: int, embed: discord.Embed):

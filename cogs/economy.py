@@ -12,7 +12,7 @@ class Economy(commands.Cog):
 		self.currency = "⚇"
 		self.shopitems = shopitems
 	
-	group = app_commands.Group(name="economy", description=f"Economy commands: earn coins, spend coins, and more")
+	group = app_commands.Group(name="econ", description=f"Economy commands: earn coins, spend coins, and more")
 
 	# some of the economy commands will be in other cogs
 	# levels: levelling up gives you some $$$

@@ -17,7 +17,7 @@ class Notebook(commands.Cog):
 			"- try it out by typing `/notebook note`"
 		])
 	
-	group = app_commands.Group(name="notebook", description="Notebook commands: view and edit your personal notes.")
+	group = app_commands.Group(name="nb", description="Notebook commands: view and edit your personal notes.")
 
 	class EditModal(discord.ui.Modal, title="Edit page"):
 		def __init__(self, interaction: discord.Interaction, index: int, embed: discord.Embed):

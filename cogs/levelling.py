@@ -141,7 +141,7 @@ class Levelling(commands.Cog):
 					)
 				await psql.db.release(connection)
 	
-	group = app_commands.Group(name="levels", description="Levelling commands: level up as you chat")
+	group = app_commands.Group(name="lvl", description="Levelling commands: level up as you chat")
 
 	@group.command(name="rank")
 	@app_commands.describe(

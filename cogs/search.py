@@ -14,7 +14,7 @@ class Search(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
 	
-	group = app_commands.Group(name="search", description="Search commands: search the web from the bot")
+	group = app_commands.Group(name="srch", description="Search commands: search the web from the bot")
 
 	class DictDropdown(discord.ui.Select):
 		def __init__(self, dictionary: dict):

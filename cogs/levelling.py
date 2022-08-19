@@ -604,12 +604,22 @@ class Levelling(commands.Cog):
 		if member.bot == False:
 			await interaction.response.defer(ephemeral=ephemeral)
 
-			guild = str(interaction.guild.id)
-			userid = str(member.id)
+			guildid = interaction.guild.id
+			userid = member.id
 
 			# check if it exists to get rid of errors
-			db.exists([guild, userid, "forest"], True, {})
-			data = db.read()
+			await psql.check_user(userid, guildid)
+
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT forest FROM users
+				WHERE userid = $1 AND guildid = $2
+				""",
+				userid, guildid
+			)
+
+			forest = row['forest'] # this is in json
+			forest: dict = psql.json_to_dict(forest)
 
 			""" 
 			forest = {
@@ -620,8 +630,6 @@ class Levelling(commands.Cog):
 				}
 			} """
 
-			# get the forest
-			forest = data[guild][userid]["forest"]
 			# sort the forest dict alphabetically by the date
 			# find keys of forest
 			keys = list(forest.keys())

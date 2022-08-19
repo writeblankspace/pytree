@@ -90,6 +90,7 @@ class Minigames(commands.Cog):
 						""",
 						psql.commasjoin(inventory), guildid, userid
 					)
+				await psql.db.release(connection)
 
 				return Result(True, self.embed)
 			else:
@@ -305,6 +306,7 @@ class Minigames(commands.Cog):
 					money_reward, xp_reward,
 					auserid, interaction.guild.id
 				)
+			await psql.db.release(connection)
 
 			# get the user as discord.User
 			user = self.bot.get_user(int(auserid))
@@ -358,15 +360,23 @@ class Minigames(commands.Cog):
 			title = "Rolling the machine...",
 		)
 
-		guildid = str(interaction.guild.id)
-		userid = str(interaction.user.id)
-		db.exists([guildid, userid, "$$$"], True, 0)
-		db.exists([guildid, userid, "rolls"], True, 0)
+		guildid = interaction.guild.id
+		userid = interaction.user.id
 
-		data = db.read()
+		await psql.check_user(userid, guildid)
 
-		data[guildid][userid]["rolls"] += 1
-		rolls = data[guildid][userid]["rolls"]
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT balance, rolls FROM users
+			WHERE userid = $1 AND guildid = $2;
+			""",
+			userid, guildid
+		)
+
+		balance = row["balance"]
+		rolls = row["rolls"]
+
+		rolls += 1
 
 		# check for how many duplicates there are
 		rolledset = set(rolled)
@@ -418,9 +428,8 @@ class Minigames(commands.Cog):
 
 		else:
 			win = False
-			data[guildid][userid]["$$$"] -= 2
 			# no prize rip
-			prize = 0
+			prize = -2
 			description = "Better luck next time!"
 			embed.color = theme.colours.red
 		
@@ -439,8 +448,19 @@ class Minigames(commands.Cog):
 				text = f"You lost 2 {self.currency}  •  roll #{rolls}"
 			)
 		
-		data[guildid][userid]["$$$"] += prize
-		db.write(data)
+		balance += prize
+		
+		connection = await psql.db.acquire()
+		async with connection.transaction():
+			await psql.db.execute(
+				"""--sql
+				UPDATE users
+				SET balance = $1, rolls = $2
+				WHERE userid = $3 AND guildid = $4;
+				""",
+				balance, rolls, userid, guildid
+			)
+		await psql.db.release(connection)
 
 		await interaction.followup.send(embed=embed)
 

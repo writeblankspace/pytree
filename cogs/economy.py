@@ -515,9 +515,7 @@ class Economy(commands.Cog):
 			self.guild = guild
 			self.max_per_page = users_per_page
 			self.currency = currency
-
-			# generate the leaderboard
-			self.generate_leaderboard(self.guild)
+			
 			# gonna dump stuff here
 			# ◁ ▷
 
@@ -530,7 +528,7 @@ class Economy(commands.Cog):
 
 			await self.message.edit(view=self)
 
-		def generate_leaderboard(self, guild: discord.Guild) -> list:
+		async def generate_leaderboard(self, guild: discord.Guild) -> list:
 			"""
 			Gives a list of the leaderboard.
 			
@@ -548,22 +546,25 @@ class Economy(commands.Cog):
 			```"""
 
 			# get the data
-			data = db.read()
-			guilddata = data[str(guild.id)]
 
-			for user in guilddata:
-				db.exists([str(guild.id), user, "$$$"], True, 0)
-				data = db.read()
-				# get the user's data
-				userdata = data[str(guild.id)][user]
-				# get the user's level
-				bal = userdata["$$$"]
+			rows = await psql.db.fetch(
+				"""--sql
+				SELECT userid, balance FROM users
+				WHERE guildid = $1
+				ORDER BY balance DESC
+				""",
+				guild.id
+			)
+
+			for row in rows:
+				member = guild.get_member(row["userid"])
+				balance = row["balance"]
 
 				# add the user to the leaderboard
 				self.leaderboard.append(
 					{
-						"member": guild.get_member(int(user)),
-						"$$$": bal
+						"member": member,
+						"$$$": balance
 					}
 				)
 			
@@ -751,6 +752,8 @@ class Economy(commands.Cog):
 		await interaction.response.defer(ephemeral=ephemeral)
 
 		lb = self.LeaderboardView(interaction.guild, self.currency, usersperpage)
+
+		await lb.generate_leaderboard(interaction.guild)
 
 		embed = lb.get_leaderboard_embed(
 			guild = interaction.guild,

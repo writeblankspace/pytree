@@ -77,7 +77,7 @@ class Levelling(commands.Cog):
 	
 	@commands.Cog.listener('on_message')
 	async def leveling_listener(self, message: discord.Message):
-		author = str(message.author.id)
+		userid = message.author.id
 
 		if message.author.bot == False and message.author != self.bot.user:
 			# cooldowns
@@ -91,18 +91,25 @@ class Levelling(commands.Cog):
 					# and spams my terminal
 					return
 
-				guild = str(message.guild.id)
+				guildid = message.guild.id
 
 				# check stuff first to avoid errors
-				db.exists([guild, author, "xp"], True, 0)
-				db.exists([guild, author, "$$$"], True, 0)
-				db.exists([guild, author, "equipped"], True, [])
-				data = db.read()
+				await psql.check_user(userid, guildid)
+
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT xp, balance, equipped FROM users
+					WHERE userid = $1 AND guildid = $2
+					""",
+					userid, guildid
+				)
+
+				xp = row['xp']
+				balance = row['balance']
+				equipped = psql.commasplit(row['equipped'])
 				
 
-				nextlevel = self.find_next_level(data[guild][author]["xp"])
-				equipped = data[guild][author]["equipped"]
-				xp = data[guild][author]["xp"]
+				nextlevel = self.find_next_level(xp)
 
 				xp_needed = nextlevel.xp_needed
 				currentlevel = nextlevel.currentlevel
@@ -111,17 +118,28 @@ class Levelling(commands.Cog):
 
 				randxp = random.randint(15, 40)
 				# 13 easter egg
-				if data[guild][author]["xp"] % 13 == 0:
+				if xp % 13 == 0:
 					randxp += 13
 				# xp gained
-				data[guild][author]["xp"] += randxp * multi
+				xp += randxp * multi
 
-				if data[guild][author]["xp"] > xp_needed:
+				if xp > xp_needed:
 					currentlevel += 1
-					data[guild][author]["$$$"] += currentlevel * 5
+					balance += currentlevel * 5
 					await message.reply(f"{message.author.mention} has leveled up to level {currentlevel}!")
 
-				db.write(data)
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET xp = $1, balance = $2
+						WHERE userid = $3 AND guildid = $4
+						""",
+						xp, balance,
+						userid, guildid
+					)
+				await psql.db.release(connection)
 	
 	group = app_commands.Group(name="levels", description="Levelling commands: level up as you chat")
 

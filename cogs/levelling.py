@@ -6,6 +6,7 @@ from db.db import db
 from PIL import *
 import os
 from io import BytesIO
+from db.sql import *
 
 class Levelling(commands.Cog):
 	def __init__(self, bot: commands.Bot):
@@ -76,7 +77,7 @@ class Levelling(commands.Cog):
 	
 	@commands.Cog.listener('on_message')
 	async def leveling_listener(self, message: discord.Message):
-		author = str(message.author.id)
+		userid = message.author.id
 
 		if message.author.bot == False and message.author != self.bot.user:
 			# cooldowns
@@ -90,18 +91,25 @@ class Levelling(commands.Cog):
 					# and spams my terminal
 					return
 
-				guild = str(message.guild.id)
+				guildid = message.guild.id
 
 				# check stuff first to avoid errors
-				db.exists([guild, author, "xp"], True, 0)
-				db.exists([guild, author, "$$$"], True, 0)
-				db.exists([guild, author, "equipped"], True, [])
-				data = db.read()
+				await psql.check_user(userid, guildid)
+
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT xp, balance, equipped FROM users
+					WHERE userid = $1 AND guildid = $2
+					""",
+					userid, guildid
+				)
+
+				xp = row['xp']
+				balance = row['balance']
+				equipped = psql.commasplit(row['equipped'])
 				
 
-				nextlevel = self.find_next_level(data[guild][author]["xp"])
-				equipped = data[guild][author]["equipped"]
-				xp = data[guild][author]["xp"]
+				nextlevel = self.find_next_level(xp)
 
 				xp_needed = nextlevel.xp_needed
 				currentlevel = nextlevel.currentlevel
@@ -110,19 +118,30 @@ class Levelling(commands.Cog):
 
 				randxp = random.randint(15, 40)
 				# 13 easter egg
-				if data[guild][author]["xp"] % 13 == 0:
+				if xp % 13 == 0:
 					randxp += 13
 				# xp gained
-				data[guild][author]["xp"] += randxp * multi
+				xp += randxp * multi
 
-				if data[guild][author]["xp"] > xp_needed:
+				if xp > xp_needed:
 					currentlevel += 1
-					data[guild][author]["$$$"] += currentlevel * 5
+					balance += currentlevel * 5
 					await message.reply(f"{message.author.mention} has leveled up to level {currentlevel}!")
 
-				db.write(data)
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET xp = $1, balance = $2
+						WHERE userid = $3 AND guildid = $4
+						""",
+						xp, balance,
+						userid, guildid
+					)
+				await psql.db.release(connection)
 	
-	group = app_commands.Group(name="levels", description="Levelling commands: level up as you chat")
+	group = app_commands.Group(name="lvl", description="Levelling commands: level up as you chat")
 
 	@group.command(name="rank")
 	@app_commands.describe(
@@ -140,19 +159,27 @@ class Levelling(commands.Cog):
 		if member.bot == False:
 			await interaction.response.defer(ephemeral=ephemeral)
 
-			guild = str(interaction.guild.id)
-			userid = str(member.id)
+			guildid = interaction.guild.id
+			userid = member.id
 
 			# avoid errors by checking if it exists
-			db.exists([guild, userid, "xp"], True, 0)
+			await psql.check_user(userid, guildid)
 
-			data = db.read()
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT xp FROM users
+				WHERE userid = $1 AND guildid = $2
+				""",
+				userid, guildid
+			)
+
+			xp = row['xp']
 
 			# just get some data yeah
-			nextlevel = self.find_next_level(data[guild][userid]["xp"])
+			nextlevel = self.find_next_level(xp)
 			xp_needed = nextlevel.xp_needed
 			prev_xp_needed = nextlevel.prev_xp_needed
-			currentxp = data[guild][userid]['xp']
+			currentxp = xp
 			currentlevel = nextlevel.currentlevel
 
 			# calculate the progress, eg 0.713
@@ -181,6 +208,7 @@ class Levelling(commands.Cog):
 			
 			# get the rank
 			lb = self.LeaderboardView(self.find_next_level, interaction.guild)
+			await lb.generate_leaderboard(interaction.guild)
 			leaderboard = lb.leaderboard
 
 			# get the author's index in the list of dicts
@@ -247,13 +275,29 @@ class Levelling(commands.Cog):
 			self.guild = guild
 			self.max_per_page = users_per_page
 
-			# generate the leaderboard
-			self.generate_leaderboard(self.guild)
 			# gonna dump stuff here
 			# ◁ ▷
 
 			super().__init__() 
 			# apparently I must do this or stuff breaks
+		
+		def disable_buttons(self):
+			max_per_page = self.max_per_page
+			# update the buttons
+			all_buttons = self.children
+
+			leftbutton = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton = discord.utils.get(all_buttons, custom_id="right")
+
+			if self.leaderboard_index - max_per_page < 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+			
+			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
 		
 		async def on_timeout(self) -> None:
 			for item in self.children:
@@ -261,7 +305,7 @@ class Levelling(commands.Cog):
 
 			await self.message.edit(view=self)
 
-		def generate_leaderboard(self, guild: discord.Guild) -> list:
+		async def generate_leaderboard(self, guild: discord.Guild) -> list:
 			"""
 			Gives a list of the leaderboard.
 			
@@ -280,20 +324,24 @@ class Levelling(commands.Cog):
 			```"""
 
 			# get the data
-			data = db.read()
-			guilddata = data[str(guild.id)]
+			rows = await psql.db.fetch(
+				"""--sql
+				SELECT userid, xp FROM users
+				WHERE guildid = $1;
+				""",
+				guild.id
+			)
 
-			for user in guilddata:
-				# get the user's data
-				userdata = guilddata[user]
+			for row in rows:
 				# get the user's level
-				xp = userdata["xp"]
+				userid = row['userid']
+				xp = row["xp"]
 				level = self.find_next_level(xp).currentlevel
 
 				# add the user to the leaderboard
 				self.leaderboard.append(
 					{
-						"member": guild.get_member(int(user)),
+						"member": guild.get_member(userid),
 						"xp": xp,
 						"level": level
 					}
@@ -389,20 +437,7 @@ class Levelling(commands.Cog):
 			)
 
 			# update the buttons
-			all_buttons = self.children
-
-			leftbutton = discord.utils.get(all_buttons, custom_id="left")
-			rightbutton = discord.utils.get(all_buttons, custom_id="right")
-
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-			
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons()
 
 			# Make sure to update the message with our updated selves
 			await interaction.response.edit_message(embed=embed, view=self)
@@ -429,20 +464,7 @@ class Levelling(commands.Cog):
 			)
 
 			# update the buttons
-			all_buttons = self.children
-
-			leftbutton = discord.utils.get(all_buttons, custom_id="left")
-			rightbutton = discord.utils.get(all_buttons, custom_id="right")
-
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-			
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons()
 
 			# Make sure to update the message with our updated selves
 			await interaction.response.edit_message(embed=embed, view=self)
@@ -470,20 +492,7 @@ class Levelling(commands.Cog):
 			)
 
 			# update the buttons
-			all_buttons = self.children
-
-			leftbutton = discord.utils.get(all_buttons, custom_id="left")
-			rightbutton = discord.utils.get(all_buttons, custom_id="right")
-
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons()
 
 
 			# Make sure to update the message with our updated selves
@@ -501,6 +510,8 @@ class Levelling(commands.Cog):
 
 		lb = self.LeaderboardView(self.find_next_level, interaction.guild, usersperpage)
 
+		await lb.generate_leaderboard(interaction.guild)
+
 		embed = lb.get_leaderboard_embed(
 			guild = interaction.guild,
 			startindex = 0
@@ -511,7 +522,7 @@ class Levelling(commands.Cog):
 
 		rightbutton = discord.utils.get(all_buttons, custom_id="right")
 
-		if lb.max_per_page > len(lb.leaderboard):
+		if lb.max_per_page >= len(lb.leaderboard):
 			rightbutton.disabled = True
 
 		lb.message = await interaction.followup.send(
@@ -593,12 +604,22 @@ class Levelling(commands.Cog):
 		if member.bot == False:
 			await interaction.response.defer(ephemeral=ephemeral)
 
-			guild = str(interaction.guild.id)
-			userid = str(member.id)
+			guildid = interaction.guild.id
+			userid = member.id
 
 			# check if it exists to get rid of errors
-			db.exists([guild, userid, "forest"], True, {})
-			data = db.read()
+			await psql.check_user(userid, guildid)
+
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT forest FROM users
+				WHERE userid = $1 AND guildid = $2
+				""",
+				userid, guildid
+			)
+
+			forest = row['forest'] # this is in json
+			forest: dict = psql.json_to_dict(forest)
 
 			""" 
 			forest = {
@@ -609,8 +630,6 @@ class Levelling(commands.Cog):
 				}
 			} """
 
-			# get the forest
-			forest = data[guild][userid]["forest"]
 			# sort the forest dict alphabetically by the date
 			# find keys of forest
 			keys = list(forest.keys())

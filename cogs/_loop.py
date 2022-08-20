@@ -4,6 +4,7 @@ import discord
 import json
 from db.db import db
 import random
+from db.sql import *
 
 class Loops(commands.Cog):
 	def __init__(self, bot: commands.Bot):

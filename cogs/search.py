@@ -7,13 +7,14 @@ from f.__index__ import *
 from f.githubissues import make_github_issue
 from f.dictionary import *
 import traceback
+from db.sql import *
 import asyncio
 
 class Search(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
 	
-	group = app_commands.Group(name="search", description="Search commands: search the web from the bot")
+	group = app_commands.Group(name="srch", description="Search commands: search the web from the bot")
 
 	class DictDropdown(discord.ui.Select):
 		def __init__(self, dictionary: dict):

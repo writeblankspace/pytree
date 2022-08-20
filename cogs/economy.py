@@ -4,6 +4,7 @@ from discord.ext import commands
 from f.stuff.shopitems import shopitems
 from f.__index__ import *
 from db.db import db
+from db.sql import *
 
 class Economy(commands.Cog):
 	def __init__(self, bot: commands.Bot):
@@ -11,7 +12,7 @@ class Economy(commands.Cog):
 		self.currency = "⚇"
 		self.shopitems = shopitems
 	
-	group = app_commands.Group(name="economy", description=f"Economy commands: earn coins, spend coins, and more")
+	group = app_commands.Group(name="econ", description=f"Economy commands: earn coins, spend coins, and more")
 
 	# some of the economy commands will be in other cogs
 	# levels: levelling up gives you some $$$
@@ -62,23 +63,33 @@ class Economy(commands.Cog):
 		async def equip(self, interaction: discord.Interaction, button: discord.ui.Button):
 			# assuming that this is the inventory
 			# and that the item is equippable
-			guildid = str(interaction.guild.id)
-			ownerid = str(self.owner.id)
+			guildid = interaction.guild.id
+			ownerid = self.owner.id
+
+			# check stuff to avoid errors
+			await psql.check_user(ownerid, guildid)
 
 			if interaction.user == self.owner:
 				# get the user's inventory
-				data = db.read()
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT inventory, equipped FROM users
+					WHERE userid = $1 and guildid = $2
+					""",
+					ownerid, guildid
+				)
+				inventory = psql.commasplit(row["inventory"])
+				equipped = psql.commasplit(row["equipped"])
 
 				# find the index of the item in the inventory
-				inventory = data[guildid][ownerid]["inventory"]
 				index = inventory.index(self.item)
 
 				# remove from the inventory
-				data[guildid][ownerid]["inventory"].pop(index)
+				inventory.pop(index)
 				# add to equipped
-				data[guildid][ownerid]["equipped"].append(self.item)
+				equipped.append(self.item)
 
-				if self.item in data[guildid][ownerid]["inventory"]:
+				if self.item in inventory:
 					# it's still in there, so can still be equipped and sold
 					self.equippable = True
 					self.sellable = True
@@ -90,7 +101,18 @@ class Economy(commands.Cog):
 				self.disable_buttons()
 
 				# save the data
-				db.write(data)
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET inventory = $1, equipped = $2
+						WHERE userid = $3 and guildid = $4
+						""",
+						psql.commasjoin(inventory), psql.commasjoin(equipped),
+						ownerid, guildid
+					)
+				await psql.db.release(connection)
 
 				# update the embed
 				title = self.embed.title
@@ -111,7 +133,7 @@ class Economy(commands.Cog):
 					description += "\n```\n" + f"{message}```"
 
 				# find out how many of the item is in the inventory now
-				inventory = data[guildid][ownerid]["inventory"]
+				inventory = inventory
 				if self.item in inventory:
 					intcount = inventory.count(self.item)
 					if intcount > 0:
@@ -142,25 +164,51 @@ class Economy(commands.Cog):
 		async def sell(self, interaction: discord.Interaction, button: discord.ui.Button):
 			# assuming that this is the inventory
 			# and that the item is equippable
-			guildid = str(interaction.guild.id)
-			ownerid = str(self.owner.id)
+			guildid = interaction.guild.id
+			ownerid = self.owner.id
+
+			# check stuff to avoid errors
+			await psql.check_user(ownerid, guildid)
 
 			if interaction.user == self.owner:
 				# get the user's inventory
-				data = db.read()
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT inventory, equipped, balance FROM users
+					WHERE userid = $1 and guildid = $2
+					""",
+					ownerid, guildid
+				)
+				
+				inventory = psql.commasplit(row["inventory"])
+				equipped = psql.commasplit(row["equipped"])
+				balance = row["balance"]
 
 				# find the index of the item in the inventory
-				inventory = data[guildid][ownerid]["inventory"]
 				index = inventory.index(self.item)
 
 				# remove from the inventory
-				data[guildid][ownerid]["inventory"].pop(index)
+				inventory.pop(index)
 				# instead of equipping, sell the item
 				price = self.price
 				# add to the user's balance
-				data[guildid][ownerid]["$$$"] += price
+				balance = row["balance"] + price
 
-				if self.item in data[guildid][ownerid]["inventory"]:
+				# save the data
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET inventory = $1, balance = $2
+						WHERE userid = $3 and guildid = $4
+						""",
+						psql.commasjoin(inventory), balance,
+						ownerid, guildid
+					)
+				await psql.db.release(connection)
+
+				if self.item in inventory:
 					# it's still in there, so can still be equipped and sold
 					if self.equippable != True:
 						self.equippable = True
@@ -172,9 +220,6 @@ class Economy(commands.Cog):
 					self.sellable = False
 				
 				self.disable_buttons()
-
-				# save the data
-				db.write(data)
 
 				# update the embed
 				title = self.embed.title
@@ -195,7 +240,7 @@ class Economy(commands.Cog):
 					description += "\n```\n" + f"{message}```"
 
 				# find out how many of the item is in the inventory now
-				inventory = data[guildid][ownerid]["inventory"]
+				inventory = inventory
 				if self.item in inventory:
 					intcount = inventory.count(self.item)
 					if intcount > 0:
@@ -382,21 +427,27 @@ class Economy(commands.Cog):
 			await interaction.followup.send(embed=embed)
 		else:
 			await interaction.response.defer(ephemeral=ephemeral)
-			guildid = str(interaction.guild.id)
-			memberid = str(member.id)
+			guildid = interaction.guild.id
+			memberid = member.id
 
-			# do the checks to avoid errors
-			db.exists([guildid, memberid, "$$$"], True, 0)
-			db.exists([guildid, memberid, "xp"], True, 0)
-			db.exists([guildid, memberid, "inventory"], True, [])
-			db.exists([guildid, memberid, "equipped"], True, [])
+			# avoid errors
+			await psql.check_user(memberid, guildid)
 
-			data = db.read()
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT balance, xp, inventory, equipped FROM users
+				WHERE userid = $1 AND guildid = $2
+				""",
+				memberid, guildid
+			)
 
-			coins = data[guildid][memberid]["$$$"]
-			xp = data[guildid][memberid]["xp"]
-			inventorylist = data[guildid][memberid]["inventory"]
-			equippedlist = data[guildid][memberid]["equipped"]
+			coins = row["balance"]
+			xp = row["xp"]
+			inventory = row["inventory"]
+			equipped = row["equipped"]
+
+			inventorylist = psql.commasplit(inventory)
+			equippedlist = psql.commasplit(equipped)
 
 			# sort lists alphabetically
 			inventorylist.sort()
@@ -464,14 +515,30 @@ class Economy(commands.Cog):
 			self.guild = guild
 			self.max_per_page = users_per_page
 			self.currency = currency
-
-			# generate the leaderboard
-			self.generate_leaderboard(self.guild)
+			
 			# gonna dump stuff here
 			# ◁ ▷
 
 			super().__init__() 
 			# apparently I must do this or stuff breaks
+		
+		def disable_buttons(self):
+			max_per_page = self.max_per_page
+			# update the buttons
+			all_buttons = self.children
+
+			leftbutton = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton = discord.utils.get(all_buttons, custom_id="right")
+
+			if self.leaderboard_index - max_per_page < 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+			
+			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
 		
 		async def on_timeout(self) -> None:
 			for item in self.children:
@@ -479,7 +546,7 @@ class Economy(commands.Cog):
 
 			await self.message.edit(view=self)
 
-		def generate_leaderboard(self, guild: discord.Guild) -> list:
+		async def generate_leaderboard(self, guild: discord.Guild) -> list:
 			"""
 			Gives a list of the leaderboard.
 			
@@ -497,22 +564,25 @@ class Economy(commands.Cog):
 			```"""
 
 			# get the data
-			data = db.read()
-			guilddata = data[str(guild.id)]
 
-			for user in guilddata:
-				db.exists([str(guild.id), user, "$$$"], True, 0)
-				data = db.read()
-				# get the user's data
-				userdata = data[str(guild.id)][user]
-				# get the user's level
-				bal = userdata["$$$"]
+			rows = await psql.db.fetch(
+				"""--sql
+				SELECT userid, balance FROM users
+				WHERE guildid = $1
+				ORDER BY balance DESC
+				""",
+				guild.id
+			)
+
+			for row in rows:
+				member = guild.get_member(row["userid"])
+				balance = row["balance"]
 
 				# add the user to the leaderboard
 				self.leaderboard.append(
 					{
-						"member": guild.get_member(int(user)),
-						"$$$": bal
+						"member": member,
+						"$$$": balance
 					}
 				)
 			
@@ -589,20 +659,7 @@ class Economy(commands.Cog):
 			)
 
 			# update the buttons
-			all_buttons = self.children
-
-			leftbutton = discord.utils.get(all_buttons, custom_id="left")
-			rightbutton = discord.utils.get(all_buttons, custom_id="right")
-
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-			
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons()
 
 			# Make sure to update the message with our updated selves
 			await interaction.response.edit_message(embed=embed, view=self)
@@ -629,20 +686,7 @@ class Economy(commands.Cog):
 			)
 
 			# update the buttons
-			all_buttons = self.children
-
-			leftbutton = discord.utils.get(all_buttons, custom_id="left")
-			rightbutton = discord.utils.get(all_buttons, custom_id="right")
-
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-			
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons()
 
 			# Make sure to update the message with our updated selves
 			await interaction.response.edit_message(embed=embed, view=self)
@@ -675,15 +719,7 @@ class Economy(commands.Cog):
 			leftbutton = discord.utils.get(all_buttons, custom_id="left")
 			rightbutton = discord.utils.get(all_buttons, custom_id="right")
 
-			if self.leaderboard_index - max_per_page < 0:
-				leftbutton.disabled = True
-			else:
-				leftbutton.disabled = False
-
-			if self.leaderboard_index + max_per_page >= len(self.leaderboard):
-				rightbutton.disabled = True
-			else:
-				rightbutton.disabled = False
+			self.disable_buttons
 
 
 			# Make sure to update the message with our updated selves
@@ -701,6 +737,8 @@ class Economy(commands.Cog):
 
 		lb = self.LeaderboardView(interaction.guild, self.currency, usersperpage)
 
+		await lb.generate_leaderboard(interaction.guild)
+
 		embed = lb.get_leaderboard_embed(
 			guild = interaction.guild,
 			startindex = 0
@@ -711,7 +749,7 @@ class Economy(commands.Cog):
 
 		rightbutton = discord.utils.get(all_buttons, custom_id="right")
 
-		if lb.max_per_page > len(lb.leaderboard):
+		if lb.max_per_page >= len(lb.leaderboard):
 			rightbutton.disabled = True
 
 		lb.message = await interaction.followup.send(
@@ -820,25 +858,46 @@ class Economy(commands.Cog):
 
 		@discord.ui.button(label='buy', style=discord.ButtonStyle.primary, custom_id="buy", row=2)
 		async def buy(self, interaction: discord.Interaction, button: discord.ui.Button):
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
+			guildid = interaction.guild.id
+			userid = interaction.user.id
 			itemdict = shopitems[self.shopitem]
 
 			price = itemdict["price"]
 
-			data = db.read()
+			await psql.check_user(userid, guildid)
 
-			cash = data[guildid][userid]["$$$"]
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT balance, inventory FROM users
+				WHERE guildid = $1 AND userid = $2
+				""",
+				guildid, userid
+			)
+
+			cash = row['balance']
+			inventory = psql.commasplit(row['inventory'])
 			
 			if cash >= price:
 				# remove the money and add the item
-				data[guildid][userid]["$$$"] -= price
-				data[guildid][userid]["inventory"].append(self.shopitem)
-				db.write(data)
+				cash -= price
+				inventory.append(self.shopitem)
+
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET balance = $1, inventory = $2
+						WHERE guildid = $3 AND userid = $4
+						""",
+						cash, psql.commasjoin(inventory),
+						guildid, userid
+					)
+				await psql.db.release(connection)
 
 				embed = discord.Embed(
 					title = f"You bought x1 of {self.shopitem}",
-					description = f"You now have {data[guildid][userid]['$$$']} {self.currency}",
+					description = f"You now have {cash} {self.currency}",
 					color = theme.colours.green
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -853,11 +912,19 @@ class Economy(commands.Cog):
 
 		@discord.ui.button(label='view my stats', style=discord.ButtonStyle.secondary, custom_id="balance", row=2)
 		async def balance(self, interaction: discord.Interaction, button: discord.ui.Button):
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
+			guildid = interaction.guild.id
+			userid = interaction.user.id
 
-			data = db.read()
-			balance = data[guildid][userid]["$$$"]
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT balance, inventory FROM users
+				WHERE guildid = $1 AND userid = $2
+				""",
+				guildid, userid
+			)
+
+			balance = row['balance']
+			inventory = psql.commasplit(row['inventory'])
 
 			itemdict = shopitems[self.shopitem]
 			price = itemdict["price"]
@@ -868,7 +935,6 @@ class Economy(commands.Cog):
 				colour = theme.colours.red
 			
 			# how many of this item do you have?
-			inventory = data[guildid][userid]["inventory"]
 			count = inventory.count(self.shopitem)
 
 			embed = discord.Embed(

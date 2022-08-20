@@ -7,6 +7,7 @@ from db.db import db
 import asyncio
 from f.__index__ import *
 import random
+from db.sql import *
 
 
 class Minigames(commands.Cog):
@@ -15,7 +16,7 @@ class Minigames(commands.Cog):
 		self.currency = "⚇"
 
 	group = app_commands.Group(
-		name="minigames", description="Mingame commands: gain money by playing minigames")
+		name="mg", description="Mingame commands: gain money by playing minigames")
 
 	class BugHunt(discord.ui.View):
 		def __init__(self, init_user: discord.User, multi: int, embed: discord.Embed):
@@ -35,29 +36,35 @@ class Minigames(commands.Cog):
 
 			await self.message.edit(view=self)
 
-		def use_item(self, interaction: discord.Interaction, itemname: str):
+		async def use_item(self, interaction: discord.Interaction, itemname: str):
 			item = shopitems[itemname]
 			kill_multi = item["kill_multi"]
 
 			user = interaction.user
-			guildid = str(interaction.guild.id)
-			userid = str(user.id)
+			guildid = interaction.guild.id
+			userid = user.id
 
-			db.exists([guildid, userid, "inventory"], True, [])
-			data = db.read()
+			psql.check_user(userid, guildid)
+			
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT inventory FROM users
+				WHERE guildid = $1 AND userid = $2
+				""",
+				guildid, userid
+			)
+
+			inventory: list = psql.commasplit(row["inventory"])
 
 			class Result():
 				def __init__(self, success, embed):
 					self.success = success
 					self.embed = embed
 
-			inventory = data[guildid][userid]["inventory"]
-
 			if itemname in inventory:
 				# it's in there so
 				# remove "bug spray" from the list
-				data[guildid][userid]["inventory"].remove(itemname)
-				db.write(data)
+				inventory.remove(itemname)
 
 				self.bugs_killed += kill_multi
 				if user.id not in self.users:
@@ -73,7 +80,17 @@ class Minigames(commands.Cog):
 
 				self.embed.__setattr__("description", description)
 
-				db.write(data)
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET inventory = $1
+						WHERE guildid = $2 AND userid = $3
+						""",
+						psql.commasjoin(inventory), guildid, userid
+					)
+				await psql.db.release(connection)
 
 				return Result(True, self.embed)
 			else:
@@ -87,7 +104,7 @@ class Minigames(commands.Cog):
 
 		@discord.ui.button(label='bug spray', style=discord.ButtonStyle.primary, custom_id='bug_spray')
 		async def bug_spray(self, interaction: discord.Interaction, button: discord.ui.Button):
-			results = self.use_item(interaction, "bug spray")
+			results = await self.use_item(interaction, "bug spray")
 
 			if results.success:
 				await interaction.response.edit_message(embed=results.embed)
@@ -96,7 +113,7 @@ class Minigames(commands.Cog):
 
 		@discord.ui.button(label='slippers', style=discord.ButtonStyle.secondary, custom_id='slippers')
 		async def slippers(self, interaction: discord.Interaction, button: discord.ui.Button):
-			results = self.use_item(interaction, "slippers")
+			results = await self.use_item(interaction, "slippers")
 
 			if results.success:
 				await interaction.response.edit_message(embed=results.embed)
@@ -105,7 +122,7 @@ class Minigames(commands.Cog):
 
 		@discord.ui.button(label='trainers', style=discord.ButtonStyle.secondary, custom_id='trainers')
 		async def trainers(self, interaction: discord.Interaction, button: discord.ui.Button):
-			results = self.use_item(interaction, "trainers")
+			results = await self.use_item(interaction, "trainers")
 
 			if results.success:
 				await interaction.response.edit_message(embed=results.embed)
@@ -114,7 +131,7 @@ class Minigames(commands.Cog):
 
 		@discord.ui.button(label='flypaper', style=discord.ButtonStyle.secondary, custom_id='flypaper')
 		async def flypaper(self, interaction: discord.Interaction, button: discord.ui.Button):
-			results = self.use_item(interaction, "flypaper")
+			results = await self.use_item(interaction, "flypaper")
 
 			if results.success:
 				await interaction.response.edit_message(embed=results.embed)
@@ -128,14 +145,23 @@ class Minigames(commands.Cog):
 		# await interaction.response.defer(ephemeral=True)
 
 		user = interaction.user
-		guildid = str(interaction.guild.id)
-		userid = str(user.id)
+		guildid = interaction.guild.id
+		userid = user.id
 
 		# get the user's data
-		db.exists([guildid, userid, "equipped"], True, {})
-		data = db.read()
-		equippedlist = data[guildid][userid]["equipped"]
-		xp = data[guildid][userid]["xp"]
+		await psql.check_user(userid, guildid)
+
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT equipped, xp, balance FROM users
+			WHERE userid = $1 AND guildid = $2;
+			""",
+			userid, guildid
+		)
+
+		equippedlist: list = psql.commasplit(row["equipped"])
+		xp: int = row["xp"]
+		balance: int = row["balance"]
 
 		multi = calc_multi(equippedlist, xp)
 		kill_multi = multi.kill_multi
@@ -162,8 +188,6 @@ class Minigames(commands.Cog):
 		embed.set_footer(text=footertext)
 
 		await interaction.response.send_message(embed=embed)
-
-		db.write(data)
 
 		await asyncio.sleep(3)
 
@@ -194,8 +218,6 @@ class Minigames(commands.Cog):
 			"\nPlease wait while the results are calculated.",
 			color=theme.colours.secondary
 		)
-
-		data = db.read()
 
 		await interaction.edit_original_response(view=None, embed=embed)
 
@@ -271,15 +293,24 @@ class Minigames(commands.Cog):
 		usernames = []
 
 		for auserid in users:
-			auserid = str(auserid)
-			data[guildid][auserid]["$$$"] += money_reward
-			data[guildid][auserid]["xp"] += xp_reward
+			auserid = int(auserid)
+
+			connection = await psql.db.acquire()
+			async with connection.transaction():
+				await psql.db.execute(
+					"""--sql
+					UPDATE users
+					SET balance = balance + $1, xp = xp + $2
+					WHERE userid = $3 AND guildid = $4
+					""",
+					money_reward, xp_reward,
+					auserid, interaction.guild.id
+				)
+			await psql.db.release(connection)
 
 			# get the user as discord.User
 			user = self.bot.get_user(int(auserid))
 			usernames.append(user.name)
-
-		db.write(data)
 
 		embed = discord.Embed(
 			title=f"{user.name}'s hunt results:",
@@ -329,15 +360,23 @@ class Minigames(commands.Cog):
 			title = "Rolling the machine...",
 		)
 
-		guildid = str(interaction.guild.id)
-		userid = str(interaction.user.id)
-		db.exists([guildid, userid, "$$$"], True, 0)
-		db.exists([guildid, userid, "rolls"], True, 0)
+		guildid = interaction.guild.id
+		userid = interaction.user.id
 
-		data = db.read()
+		await psql.check_user(userid, guildid)
 
-		data[guildid][userid]["rolls"] += 1
-		rolls = data[guildid][userid]["rolls"]
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT balance, rolls FROM users
+			WHERE userid = $1 AND guildid = $2;
+			""",
+			userid, guildid
+		)
+
+		balance = row["balance"]
+		rolls = row["rolls"]
+
+		rolls += 1
 
 		# check for how many duplicates there are
 		rolledset = set(rolled)
@@ -389,9 +428,8 @@ class Minigames(commands.Cog):
 
 		else:
 			win = False
-			data[guildid][userid]["$$$"] -= 2
 			# no prize rip
-			prize = 0
+			prize = -2
 			description = "Better luck next time!"
 			embed.color = theme.colours.red
 		
@@ -410,8 +448,19 @@ class Minigames(commands.Cog):
 				text = f"You lost 2 {self.currency}  •  roll #{rolls}"
 			)
 		
-		data[guildid][userid]["$$$"] += prize
-		db.write(data)
+		balance += prize
+		
+		connection = await psql.db.acquire()
+		async with connection.transaction():
+			await psql.db.execute(
+				"""--sql
+				UPDATE users
+				SET balance = $1, rolls = $2
+				WHERE userid = $3 AND guildid = $4;
+				""",
+				balance, rolls, userid, guildid
+			)
+		await psql.db.release(connection)
 
 		await interaction.followup.send(embed=embed)
 

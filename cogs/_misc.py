@@ -7,8 +7,9 @@ from f.__index__ import *
 from f.githubissues import make_github_issue
 import traceback
 import asyncio
+from db.sql import *
 
-class utility(commands.Cog):
+class Misc(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
 		self.ctx_menu = app_commands.ContextMenu(
@@ -20,7 +21,7 @@ class utility(commands.Cog):
 	async def cog_unload(self) -> None:
 		self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
 
-	group = app_commands.Group(name="utility", description="Miscellaneous commands: various useful commands that don't fit anywhere else")
+	group = app_commands.Group(name="misc", description="Miscellaneous commands: various useful commands that don't fit anywhere else")
 
 	@group.command(name='ping')
 	async def ping(self, interaction: discord.Interaction):
@@ -125,7 +126,7 @@ class utility(commands.Cog):
 			# Make sure we know what the error actually is
 			traceback.print_tb(error.__traceback__)
 		
-	@app_commands.command(name="issue")
+	@group.command(name="issue")
 	async def issue(self, interaction: discord.Interaction):
 		"""
 		Creates an issue on GitHub. You can add suggestions and bug reports."""
@@ -246,4 +247,4 @@ class utility(commands.Cog):
 
 
 async def setup(bot: commands.Bot):
-	await bot.add_cog(utility(bot))
+	await bot.add_cog(Misc(bot))

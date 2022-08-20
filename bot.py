@@ -27,7 +27,7 @@ OWNERS = os.getenv('OWNERS').split(", ")
 initial_extensions = [
 	"jishaku",
 	"cogs._errors",
-	"cogs._utility",
+	"cogs._misc",
 	"cogs._admin",
 	"cogs._loop",
 	"cogs.search",
@@ -91,7 +91,7 @@ async def main():
 
 		print(f"{b}{g}✅ SUCCESS: {w}{len(initial_extensions)} extensions loaded")
 
-		await pgsql.init_db()
+		await psql.init_db()
 		print(f"{b}{g}✅ SUCCESS: {w}Database initialized")
 
 		# start the bot

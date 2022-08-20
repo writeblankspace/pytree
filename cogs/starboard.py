@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import datetime
 from db.db import db
+from db.sql import *
 
 
 class Starboard(commands.Cog):
@@ -13,15 +14,26 @@ class Starboard(commands.Cog):
 		channel = self.bot.get_channel(ctx.channel_id)
 		guild = ctx.guild_id
 
-		dbexists = db.exists([f"{guild}_settings", "starboard"], False)
-		if not dbexists:
+		await psql.check_guild(guild)
+
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT starboardid FROM guilds
+			WHERE guildid = $1;
+			""",
+			guild
+		)
+
+		if row == None:
 			return
+
+		starboard = row["starboardid"]
 		
 		data = db.read()
 
 		emoji = "📌"
 
-		star_channel = data[f"{guild}_settings"][f"starboard"]
+		star_channel = starboard
 
 		if star_channel != None:
 			board = self.bot.get_channel(star_channel)

@@ -343,11 +343,6 @@ class Notebook(commands.Cog):
 		def __init__(self, interaction: discord.Interaction):
 			self.index = 0
 			self.interaction = interaction
-		
-			data = db.read()
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
-			self.content = data[guildid][userid]["notebook"][0]
 
 			super().__init__()
 
@@ -361,11 +356,17 @@ class Notebook(commands.Cog):
 		)
 
 		async def on_submit(self, interaction: discord.Interaction):
-			data = db.read()
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT notebook FROM users
+				WHERE guildid = $1 AND userid = $2
+				""",
+				interaction.guild.id, interaction.user.id
+			)
 
-			result = data[guildid][userid]["notebook"][self.index] + "\n" + self.notes.value
+			notebook: dict = psql.json_to_dict(row["notebook"])
+
+			result = notebook["data"][self.index] + "\n" + self.notes.value
 
 			if len(result) > 2000:
 				embed = discord.Embed(
@@ -375,9 +376,21 @@ class Notebook(commands.Cog):
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
-				data[guildid][userid]["notebook"][self.index] = result
+				notebook["data"][self.index] = result
 
-				db.write(data)
+				notebook = psql.dict_to_json(notebook)
+
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET notebook = $1
+						WHERE guildid = $2 AND userid = $3
+						""",
+						notebook, interaction.guild.id, interaction.user.id
+					)
+				await psql.db.release(connection)
 
 				embed = discord.Embed(
 					title = "Quick note saved!",
@@ -403,10 +416,24 @@ class Notebook(commands.Cog):
 		"""
 		Creates a quick note on the first page of your notebook. """
 		user = interaction.user
-		guildid = str(interaction.guild.id)
-		userid = str(user.id)
+		guildid = interaction.guild.id
+		userid = user.id
 
-		db.exists([guildid, userid, "notebook"], True, [self.intropage])
+		await psql.check_user(userid, guildid)
+
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT notebook FROM users
+			WHERE guildid = $1 AND userid = $2
+			""",
+			guildid, userid
+		)
+
+		notebookdict: dict = psql.json_to_dict(row["notebook"])
+		notebook: list = notebookdict["data"] # returns a list
+
+		modal = self.QuicknoteModal(interaction)
+		modal.content = notebook[0]
 
 		await interaction.response.send_modal(self.QuicknoteModal(interaction))
 

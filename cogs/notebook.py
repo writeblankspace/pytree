@@ -9,13 +9,6 @@ from db.sql import *
 class Notebook(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
-		self.intropage = "\n".join([
-			"Welcome to your new notebook! You can use this to keep track of your personal notes.\n",
-			"`/notebook open` lets you open your notebook. You can edit your notes by clicking on the buttons below. You can also delete pages and add new ones.\n",
-			"`/notebook note` is for quick note-taking. All quick notes go into the first page of your notebook.\n",
-			"**Quick notes:**",
-			"- try it out by typing `/notebook note`"
-		])
 	
 	group = app_commands.Group(name="nb", description="Notebook commands: view and edit your personal notes.")
 
@@ -26,14 +19,8 @@ class Notebook(commands.Cog):
 			self.index = index
 			self.interaction = interaction
 			self.embed = embed
-		
-			data = db.read()
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
-			content = data[guildid][userid]["notebook"][index]
 
 			super().__init__(title=self.title)
-			self.notes.default = content
 
 
 		notes = discord.ui.TextInput(
@@ -45,12 +32,32 @@ class Notebook(commands.Cog):
 		)
 
 		async def on_submit(self, interaction: discord.Interaction):
-			data = db.read()
-			guildid = str(interaction.guild.id)
-			userid = str(interaction.user.id)
-			data[guildid][userid]["notebook"][self.index] = self.notes.value
+			guildid = interaction.guild.id
+			userid = interaction.user.id
 
-			db.write(data)
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT notebook FROM users
+				WHERE userid = $1 AND guildid = $2;
+				""",
+				userid, guildid
+			)
+
+			notebook = psql.json_to_dict(row["notebook"])
+
+			notebook["data"][self.index] = self.notes.value
+
+			connection = await psql.db.acquire()
+			async with connection.transaction():
+				await psql.db.execute(
+					"""--sql
+					UPDATE users
+					SET notebook = $1
+					WHERE guildid = $2 AND userid = $3
+					""",
+					psql.dict_to_json(notebook), guildid, userid
+				)
+			await psql.db.release(connection)
 
 			self.embed.__setattr__("description", self.notes.value)
 
@@ -77,26 +84,27 @@ class Notebook(commands.Cog):
 		
 			super().__init__()
 
-			self.disable_buttons() # disable the buttons if necessary
-
 		async def on_timeout(self) -> None:
 			for item in self.children:
 				item.disabled = True
 
 			await self.message.edit(view=self)
 		
-		def notebook(self) -> list:
-			guildid = str(self.guild.id)
-			userid = str(self.user.id)
-			db.exists([guildid, userid, "notebook"], True, [])
-			data = db.read()
+		async def notebook(self) -> list:
+			row = await psql.db.fetchrow(
+				"""--sql
+				SELECT notebook FROM users
+				WHERE guildid = $1 AND userid = $2
+				""",
+				self.guild.id, self.user.id
+			)
 
-			notebook: list = data[guildid][userid]["notebook"]
+			notebook = psql.json_to_dict(row["notebook"])["data"]
 
 			return notebook
 
-		def disable_buttons(self):
-			notebook: list = self.notebook()
+		async def disable_buttons(self):
+			notebook: list = await self.notebook()
 
 			all_buttons = self.children
 
@@ -113,8 +121,8 @@ class Notebook(commands.Cog):
 			else:
 				rightbutton.disabled = False
 
-		def get_embed(self, index: int):
-			notebook: list = self.notebook()
+		async def get_embed(self, index: int):
+			notebook: list = await self.notebook()
 
 			embed = discord.Embed(
 				title = f"{self.user.name}'s notebook",
@@ -138,18 +146,33 @@ class Notebook(commands.Cog):
 			else:
 				# assuming this button is active
 				self.index -= 1
-				embed = self.get_embed(self.index)
-				self.disable_buttons()
+				embed = await self.get_embed(self.index)
+				await self.disable_buttons()
 				await interaction.response.edit_message(embed=embed, view=self)
 		
 		@discord.ui.button(label="edit page", style=discord.ButtonStyle.primary, custom_id="edit")
 		async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
 			if interaction.user == self.user:
-				await interaction.response.send_modal(self.modal(
+
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT notebook FROM users
+					WHERE guildid = $1 AND userid = $2
+					""",
+					self.guild.id, self.user.id
+				)
+
+				notebook: list = psql.json_to_dict(row["notebook"])["data"]
+
+				modal = self.modal(
 					interaction = interaction,
 					index = self.index,
-					embed = self.get_embed(self.index)
-				))
+					embed = await self.get_embed(self.index)
+				)
+
+				modal.notes.default = notebook[self.index]
+
+				await interaction.response.send_modal(modal)
 			else:
 				embed = discord.Embed(
 					title = "Only the owner of the notebook can do this.",
@@ -167,16 +190,35 @@ class Notebook(commands.Cog):
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
 				# add a new page after the current page
-				data = db.read()
-				guildid = str(self.guild.id)
-				userid = str(self.user.id)
+				row = await psql.db.fetchrow(
+					"""--sql
+					SELECT notebook FROM users
+					WHERE guildid = $1 AND userid = $2
+					""",
+					self.guild.id, self.user.id
+				)
 
-				data[guildid][userid]["notebook"].insert(self.index + 1, "")
-				db.write(data)
+				notebook: dict = psql.json_to_dict(row["notebook"])
+
+				notebook["data"].insert(self.index + 1, "")
+
+				notebook = psql.dict_to_json(notebook)
+
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						"""--sql
+						UPDATE users
+						SET notebook = $1
+						WHERE guildid = $2 AND userid = $3
+						""",
+						notebook, self.guild.id, self.user.id
+					)
+				await psql.db.release(connection)
 
 				self.index += 1
-				embed = self.get_embed(self.index)
-				self.disable_buttons()
+				embed = await self.get_embed(self.index)
+				await self.disable_buttons()
 
 				await interaction.response.edit_message(embed=embed, view=self)
 
@@ -190,26 +232,44 @@ class Notebook(commands.Cog):
 				)
 				await interaction.response.send_message(embed=embed, ephemeral=True)
 			else:
-				if len(self.notebook()) == 1:
+				if len(await self.notebook()) == 1:
 					embed = discord.Embed(
 						title = "Your notebook must have at least one page.",
 						color = theme.colours.red
 					)
 					await interaction.response.send_message(embed=embed, ephemeral=True)
 				else:
-					data = db.read()
-					guildid = str(self.guild.id)
-					userid = str(self.user.id)
+					row = await psql.db.fetchrow(
+						"""--sql
+						SELECT notebook FROM users
+						WHERE guildid = $1 AND userid = $2
+						""",
+						self.guild.id, self.user.id
+					)
 
-					data[guildid][userid]["notebook"].pop(self.index)
+					notebook: dict = psql.json_to_dict(row["notebook"])
 
-					db.write(data)
+					notebook["data"].pop(self.index)
+
+					notebook = psql.dict_to_json(notebook)
+
+					connection = await psql.db.acquire()
+					async with connection.transaction():
+						await psql.db.execute(
+							"""--sql
+							UPDATE users
+							SET notebook = $1
+							WHERE guildid = $2 AND userid = $3
+							""",
+							notebook, self.guild.id, self.user.id
+						)
+					await psql.db.release(connection)
 
 					if self.index != 0:
 						self.index -= 1
 
-					embed = self.get_embed(self.index)
-					self.disable_buttons()
+					embed = await self.get_embed(self.index)
+					await self.disable_buttons()
 
 					await interaction.response.edit_message(embed=embed, view=self)
 
@@ -224,8 +284,8 @@ class Notebook(commands.Cog):
 			else:
 				# assuming this button is active
 				self.index += 1
-				embed = self.get_embed(self.index)
-				self.disable_buttons()
+				embed = await self.get_embed(self.index)
+				await self.disable_buttons()
 				await interaction.response.edit_message(embed=embed, view=self)
 
 	@group.command(name="open")
@@ -238,13 +298,22 @@ class Notebook(commands.Cog):
 		Opens your notebook to view and edit it."""
 		await interaction.response.defer(ephemeral=ephemeral)
 		user = interaction.user
-		guildid = str(interaction.guild.id)
-		userid = str(user.id)
+		guildid = interaction.guild.id
+		userid = user.id
 
-		db.exists([guildid, userid, "notebook"], True, [self.intropage])
-		data = db.read()
+		await psql.check_user(userid, guildid)
 
-		notebook: list = data[guildid][userid]["notebook"] # returns a list
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT notebook FROM users
+			WHERE guildid = $1 AND userid = $2
+			""",
+			guildid, userid
+		)
+
+		notebookdict: dict = psql.json_to_dict(row["notebook"])
+
+		notebook: list = notebookdict["data"] # returns a list
 
 		currentpage = index - 1
 		# currentpage is the page we're currently on
@@ -265,6 +334,8 @@ class Notebook(commands.Cog):
 		)
 
 		view = self.NBNav(interaction, currentpage, self.EditModal)
+
+		await view.disable_buttons()
 
 		view.message = await interaction.followup.send(embed=embed, view=view)
 

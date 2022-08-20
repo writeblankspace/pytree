@@ -36,6 +36,14 @@ class Psql():
 			); """ # inventory and equipped are lists separated by commas
 		)
 
+		nb_default = "\\n".join([
+			"Welcome to your new notebook! You can use this to keep track of your personal notes.\\n",
+			"`/notebook open` lets you open your notebook. You can edit your notes by clicking on the buttons below. You can also delete pages and add new ones.\\n",
+			"`/notebook note` is for quick note-taking. All quick notes go into the first page of your notebook.\\n",
+			"**Quick notes:**",
+			"- try it out by typing `/notebook note`"
+		])
+
 		users_columns = [
 			("userid", "BIGINT", None),
 			("guildid", "BIGINT", None),
@@ -45,7 +53,7 @@ class Psql():
 			("inventory", "TEXT", "''"),
 			("equipped", "TEXT", "''"),
 			("rolls", "INTEGER", "0"),
-			("notebook", "JSON", "JSON '{\"data\": []}'")
+			("notebook", "JSON", "JSON '{\"data\": [\"" + nb_default + "\"]}'"),
 		]
 
 		for column in users_columns:

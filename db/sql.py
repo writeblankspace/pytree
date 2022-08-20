@@ -38,10 +38,10 @@ class Psql():
 
 		nb_default = "\\n".join([
 			"Welcome to your new notebook! You can use this to keep track of your personal notes.\\n",
-			"`/notebook open` lets you open your notebook. You can edit your notes by clicking on the buttons below. You can also delete pages and add new ones.\\n",
-			"`/notebook note` is for quick note-taking. All quick notes go into the first page of your notebook.\\n",
+			"`/nb open` lets you open your notebook. You can edit your notes by clicking on the buttons below. You can also delete pages and add new ones.\\n",
+			"`/nb quick` is for quick note-taking. All quick notes go into the first page of your notebook.\\n",
 			"**Quick notes:**",
-			"- try it out by typing `/notebook note`"
+			"- try it out by typing `/nb quick`"
 		])
 
 		users_columns = [

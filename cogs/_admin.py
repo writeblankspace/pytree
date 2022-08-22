@@ -65,7 +65,7 @@ class Admin(commands.Cog):
 	@app_commands.describe(
 		date = "the archive's id in the format YYYY/MM"
 	)
-	async def archivemonth(self, interaction: Interaction, date: str) -> None:
+	async def archivemonth(self, interaction: discord.Interaction, date: str) -> None:
 		"""
 		[RESTRICTED] Archives the members' trees to their forest """
 		await interaction.response.defer(ephemeral=False)
@@ -138,6 +138,107 @@ class Admin(commands.Cog):
 
 		await interaction.followup.send(embed=embed)
 
+	class SQLview(discord.ui.View):
+		def __init__(self, user: discord.User, query: str, rows: list, bot: commands.Bot):
+			super().__init__()
+
+			self.rows = rows
+			self.query = query
+			self.user = user
+			self.index = 0
+			self.current_column = 0
+			self.bot = bot
+		
+		@discord.ui.button(label='◄', style=discord.ButtonStyle.secondary, custom_id="left")
+		async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
+			pass
+		
+		def generate_embed(self, index):
+			row = self.rows[index] # Record object
+
+			specifics = []
+			specifics.append(("userid", row.get('userid')))
+			specifics.append(("guildid", row.get('guildid')))
+
+			specifics_str = []
+
+			for specific in specifics:
+				specifics_str.append(f"{specific[0]} = {specific[1]}")
+
+			if specifics_str != []:	
+				specifics_str = "`WHERE " + " AND ".join(specifics_str) + "`\n"
+			else:
+				specifics_str = ""
+
+			embed = discord.Embed(
+				title = f"`{self.query.replace(';', '')}`",
+				color = theme.colours.primary
+			)
+
+			keys = row.keys()
+
+			columns_str = []
+
+			i = 0
+
+			for key in keys:
+				# shorten value to 25 characters
+				value = row[key]
+				if len(str(value)) > 25:
+					value = value[:22] + "..."
+
+				if value in [None, ""]:
+					value = f"[None: {type(value)}]"
+				
+				if i == self.current_column:
+					arrowansi = ansimd.ansi(
+						format = ansimd.format.bold,
+						color = ansimd.color.yellow
+					)
+					ansi = ansimd.ansi(
+						format = ansimd.format.bold,
+						color = ansimd.color.cyan
+					)
+					keystr = f"{arrowansi}> {ansi}{key}"
+				else:
+					ansi = ansimd.ansi(
+						color = ansimd.color.cyan
+					)
+					keystr = f"  {ansi}{key}"
+				
+				n = ansimd.normal()
+
+				columns_str.append(f"{keystr}: {n}{value}")
+
+				i += 1
+			
+			columns_str = "\n".join(columns_str)
+			
+			if columns_str != []:
+				embed.description = f"{specifics_str}```ansi\n{columns_str}```"
+			else:
+				embed.description = specifics_str
+			
+			return embed
+
+
+	@group.command(name="sql")
+	@owner_only()
+	@app_commands.describe(
+		query = "the query to run"
+	)
+	async def sql(self, interaction: discord.Interaction, query: str) -> None:
+		"""
+		[RESTRICTED] Runs the given query on the database."""
+		await interaction.response.defer(ephemeral=True)
+
+		# run the query
+		rows: list = await psql.db.fetch(query)
+
+		view = self.SQLview(interaction.user, query, rows, self.bot)
+		embed = view.generate_embed(0)
+
+		await interaction.followup.send(embed=embed)
 
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Admin(bot))

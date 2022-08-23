@@ -7,6 +7,7 @@ from db.db import db
 from cogs.levelling import Levelling
 import time
 from db.sql import *
+import traceback
 
 
 class Admin(commands.Cog):
@@ -149,12 +150,40 @@ class Admin(commands.Cog):
 			self.current_column = 0
 			self.bot = bot
 		
-		@discord.ui.button(label='◄', style=discord.ButtonStyle.secondary, custom_id="left")
-		async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
-			pass
+		def disable_buttons(self):
+			all_buttons = self.children
+
+			leftbutton: discord.ui.Button = discord.utils.get(all_buttons, custom_id="left")
+			rightbutton: discord.ui.Button = discord.utils.get(all_buttons, custom_id="right")
+			upbutton: discord.ui.Button = discord.utils.get(all_buttons, custom_id="up")
+			downbutton: discord.ui.Button = discord.utils.get(all_buttons, custom_id="down")
+
+			if self.index == 0:
+				leftbutton.disabled = True
+			else:
+				leftbutton.disabled = False
+			
+			if self.index + 1 >= len(self.rows):
+				rightbutton.disabled = True
+			else:
+				rightbutton.disabled = False
+			
+			if self.current_column == 0:
+				upbutton.disabled = True
+			else:
+				upbutton.disabled = False
+			
+			if self.current_column + 1 >= len(self.rows[self.index]):
+				downbutton.disabled = True
+			else:
+				downbutton.disabled = False
 		
-		def generate_embed(self, index):
-			row = self.rows[index] # Record object
+		async def update_rows(self):
+			rows: list = await psql.db.fetch(self.query)
+			self.rows = rows
+		
+		def generate_embed(self):
+			row = self.rows[self.index] # Record object
 
 			specifics = []
 			specifics.append(("userid", row.get('userid')))
@@ -163,7 +192,19 @@ class Admin(commands.Cog):
 			specifics_str = []
 
 			for specific in specifics:
-				specifics_str.append(f"{specific[0]} = {specific[1]}")
+				if specific[1] is not None:
+					if specific[0] == "userid":
+						easyname = "*user*"
+						user = self.bot.get_user(specific[1])
+						easyval = f"'{user.name}#{user.discriminator}'"
+					elif specific[0] == "guildid":
+						easyname = "*guild*"
+						easyval = f"'{self.bot.get_guild(specific[1]).name}'"
+					else:
+						easyname = specific[0]
+						easyval = specific[1]
+					
+					specifics_str.append(f"{easyname} = {easyval}")
 
 			if specifics_str != []:	
 				specifics_str = "`WHERE " + " AND ".join(specifics_str) + "`\n"
@@ -219,8 +260,130 @@ class Admin(commands.Cog):
 			else:
 				embed.description = specifics_str
 			
+			embed.set_footer(
+				text = f"record {self.index + 1} of {len(self.rows)}"
+			) 
+			
 			return embed
 
+		class Edit(discord.ui.Modal, title='Edit'):
+			def __init__(self, interaction: discord.Interaction, record_key, current_column_name, when_done):
+				self.record_key = record_key
+				self.current_column_name = current_column_name
+				self.interaction = interaction
+				self.when_done = when_done
+
+				super().__init__()
+			
+			tablename = discord.ui.TextInput(
+				label="table name",
+				placeholder="SELECT * FROM ___"
+			)
+
+			value = discord.ui.TextInput(
+				label='value'
+			)
+
+			async def on_submit(self, interaction: discord.Interaction):
+				tablename = self.tablename.value
+				value = self.value.value
+
+				connection = await psql.db.acquire()
+				async with connection.transaction():
+					await psql.db.execute(
+						f"""--sql
+						UPDATE {tablename}
+						SET {self.current_column_name} = {value}
+						WHERE {self.record_key[0]} = {self.record_key[1]};
+						"""
+					)
+				await psql.db.release(connection)
+
+				r = await self.when_done()
+				await interaction.response.edit_message(embed=r[0], view=r[1])
+
+			async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+				embed = discord.Embed(
+					title = "Something went wrong...", 
+					description = f"Please ping the developer.",
+					colour = theme.colours.red
+				)
+				await interaction.response.send_message(embed=embed, ephemeral=True)
+
+				# Make sure we know what the error actually is
+				traceback.print_tb(error.__traceback__)
+
+
+		@discord.ui.button(label="edit", style=discord.ButtonStyle.secondary, custom_id="edit", row=0)
+		async def edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+			row = self.rows[self.index]
+			keys = list(row.keys())
+			key = keys[self.current_column]
+
+			if "userid" in keys:
+				record_key = ("userid", row["userid"])
+			elif "guildid" in keys:
+				record_key = ("guildid", row["guildid"])
+			else:
+				record_key = ("id", row["id"])
+
+			async def when_done():
+				await self.update_rows()
+				embed = self.generate_embed()
+				self.disable_buttons()
+
+				return (embed, self)
+
+			modal = self.Edit(interaction, record_key, key, when_done)
+			
+			modal.title = f"Edit record {key}"
+			value = row[key]
+			if value not in [None, '']:
+				modal.value.default = row[key]
+			
+			await interaction.response.send_modal(modal)
+
+		# up button
+		@discord.ui.button(label="▲", style=discord.ButtonStyle.primary, custom_id="up", row=0)
+		async def up(self, interaction: discord.Interaction, button: discord.ui.Button):
+			self.current_column -= 1
+
+			embed = self.generate_embed()
+			self.disable_buttons()
+			
+			await interaction.response.edit_message(embed=embed, view=self)
+
+		@discord.ui.button(label='◄', style=discord.ButtonStyle.primary, custom_id="left", row=1)
+		async def left(self, interaction: discord.Interaction, button: discord.ui.Button):
+			self.index -= 1;
+			
+			embed = self.generate_embed()
+			self.disable_buttons()
+			
+			await interaction.response.edit_message(embed=embed, view=self)
+		
+		# down button
+		@discord.ui.button(label="▼", style=discord.ButtonStyle.primary, custom_id="down", row=1)
+		async def down(self, interaction: discord.Interaction, button: discord.ui.Button):
+			self.current_column += 1
+
+			embed = self.generate_embed()
+			self.disable_buttons()
+			
+			await interaction.response.edit_message(embed=embed, view=self)
+
+		@discord.ui.button(label='►', style=discord.ButtonStyle.primary, custom_id="right", row=1)
+		async def right(self, interaction: discord.Interaction, button: discord.ui.Button):
+			self.index += 1;
+			
+			embed = self.generate_embed()
+			self.disable_buttons()
+			
+			await interaction.response.edit_message(embed=embed, view=self)
+
+		
+		
+		
 
 	@group.command(name="sql")
 	@owner_only()
@@ -236,9 +399,10 @@ class Admin(commands.Cog):
 		rows: list = await psql.db.fetch(query)
 
 		view = self.SQLview(interaction.user, query, rows, self.bot)
-		embed = view.generate_embed(0)
+		view.disable_buttons()
+		embed = view.generate_embed()
 
-		await interaction.followup.send(embed=embed)
+		await interaction.followup.send(embed=embed, view=view)
 
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Admin(bot))

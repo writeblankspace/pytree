@@ -282,7 +282,8 @@ class Minigames(commands.Cog):
 		bug_types_caught_str = "\n".join(bug_types_caught_str)
 
 		if bug_types_caught_str == "":
-			bug_types_caught_str = "[None]"
+			gray = ansimd.color.gray
+			bug_types_caught_str = f"{ansimd.ansi(color=gray)}[None]{ansimd.normal()}"
 		
 		bug_rewards = 0
 

@@ -38,7 +38,7 @@ class Minigames(commands.Cog):
 			guildid = interaction.guild.id
 			userid = user.id
 
-			psql.check_user(userid, guildid)
+			await psql.check_user(userid, guildid)
 			
 			row = await psql.db.fetchrow(
 				"""--sql
@@ -68,8 +68,11 @@ class Minigames(commands.Cog):
 				description = self.embed.description
 				# find everything between the "```"s
 				logs = description.split("```")[1]
+				bold = ansimd.format.bold
+				cyan = ansimd.color.cyan
+				gray = ansimd.color.gray
 				newlogs = logs + "\n" + \
-					f"{user.name}:: used {itemname} [+{kill_multi}]"
+					f"{ansimd.ansi(bold, cyan)}{user.name}:{ansimd.normal()} used {itemname} {ansimd.ansi(gray)}[+{kill_multi}]"
 				description = description.replace(logs, newlogs)
 
 				self.embed.__setattr__("description", description)
@@ -185,12 +188,16 @@ class Minigames(commands.Cog):
 
 		await asyncio.sleep(3)
 
+		bold = ansimd.format.bold
+		cyan = ansimd.color.cyan
+		gray = ansimd.color.gray
+
 		embed = discord.Embed(
 			title=f"{theme.loader} {user.name} is hunting for bugs!",
 			description=f"There are **{bugs} bugs** in the area. Click on the items you want to use hunt the bugs. There is a 1/3 chance of one bug being killed per attempt.\n" +
 			"Other users can join in too! Rewards will be shared equally.\n" +
-			"```asciidoc\n" +
-			f"{user.name}:: started the bug hunt```",
+			"```ansi\n" +
+			f"{ansimd.ansi(bold, cyan)}{user.name}:{ansimd.normal()} started the bug hunt```",
 			color=theme.colours.green
 		)
 
@@ -267,7 +274,10 @@ class Minigames(commands.Cog):
 			emoji = bug_types[bug_type]["emoji"]
 			bug_name = bug_types[bug_type]["plural"]
 			reward = bug_types[bug_type]["prize"] * count
-			bug_types_caught_str.append(f"{emoji} {bug_name}:: {count} [+{reward} {self.currency}]")
+			bold = ansimd.format.bold
+			cyan = ansimd.color.cyan
+			gray = ansimd.color.gray
+			bug_types_caught_str.append(f"{ansimd.ansi(bold, cyan)}{emoji} {bug_name}:{ansimd.normal()} {count} {ansimd.ansi(color=gray)}[+{reward} {self.currency}]{ansimd.normal()}")
 
 		bug_types_caught_str = "\n".join(bug_types_caught_str)
 
@@ -316,7 +326,7 @@ class Minigames(commands.Cog):
 
 		embed.add_field(
 			name = "Bugs caught",
-			value = "```asciidoc\n" + bug_types_caught_str + "```",
+			value = "```ansi\n" + bug_types_caught_str + "```",
 			inline = True
 		)
 

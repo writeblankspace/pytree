@@ -381,10 +381,6 @@ class Admin(commands.Cog):
 			
 			await interaction.response.edit_message(embed=embed, view=self)
 
-		
-		
-		
-
 	@group.command(name="sql")
 	@owner_only()
 	@app_commands.describe(
@@ -403,6 +399,19 @@ class Admin(commands.Cog):
 		embed = view.generate_embed()
 
 		await interaction.followup.send(embed=embed, view=view)
+	
+	@sql.autocomplete("query")
+	async def sql_autocomplete(self, interaction: discord.Interaction, current: str):
+		return [
+			app_commands.Choice(
+				name=f'SELECT * FROM users ORDER BY userid;', 
+				value=f'SELECT * FROM users ORDER BY userid;'
+			),
+			app_commands.Choice(
+				name='SELECT * FROM guilds ORDER BY guildid;', 
+				value='SELECT * FROM guilds ORDER BY guildid;'
+			)
+		]
 
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Admin(bot))

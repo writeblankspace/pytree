@@ -229,7 +229,8 @@ class Admin(commands.Cog):
 					value = value[:22] + "..."
 
 				if value in [None, ""]:
-					value = f"[None: {type(value)}]"
+					gray = ansimd.ansi(color=ansimd.color.gray)
+					value = f"{gray}[None: {type(value)}]{ansimd.normal()}"
 				
 				if i == self.current_column:
 					arrowansi = ansimd.ansi(

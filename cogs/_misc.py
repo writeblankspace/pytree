@@ -7,6 +7,7 @@ from f.__index__ import *
 from f.githubissues import make_github_issue
 import traceback
 import asyncio
+import urllib.parse
 from db.sql import *
 
 class Misc(commands.Cog):
@@ -69,10 +70,14 @@ class Misc(commands.Cog):
 	
 	@screenshot.autocomplete("url")
 	async def screenshot_autocomplete(self, interaction: discord.Interaction, current: str):
+		# turn current into http encoded
+		url_encoded = urllib.parse.quote_plus(current)
+
+		# get the results from the database
 		return [
 			app_commands.Choice(
-				name='https://www.google.com/search?q=google+search', 
-				value='https://www.google.com/search?q=google+search'
+				name=f'https://www.google.com/search?q={url_encoded}', 
+				value=f'https://www.google.com/search?q={url_encoded}'
 			),
 			app_commands.Choice(
 				name='https://discord.com', 

@@ -207,7 +207,7 @@ class Levelling(commands.Cog):
 				currentxp_embed = 0
 			
 			# get the rank
-			lb = self.LeaderboardView(self.find_next_level, interaction.guild)
+			lb = self.LeaderboardView(self.bot, self.find_next_level, interaction.guild)
 			await lb.generate_leaderboard(interaction.guild)
 			leaderboard = lb.leaderboard
 
@@ -265,10 +265,11 @@ class Levelling(commands.Cog):
 		"""
 		Buttons for the /leaderboard command """
 
-		def __init__(self, find_next_level, guild: discord.Guild, users_per_page: int = 5):
+		def __init__(self, bot: commands.Bot, find_next_level, guild: discord.Guild, users_per_page: int = 5):
 			# if you want to see top 1-10, then 1
 			# top 11-20, then 11
 			# and so on
+			self.bot = bot
 			self.leaderboard = []
 			self.leaderboard_index = 0
 			self.find_next_level = find_next_level
@@ -335,17 +336,19 @@ class Levelling(commands.Cog):
 			for row in rows:
 				# get the user's level
 				userid = row['userid']
-				xp = row["xp"]
-				level = self.find_next_level(xp).currentlevel
+				member = guild.get_member(userid)
+				if member is not None:
+					xp = row["xp"]
+					level = self.find_next_level(xp).currentlevel
 
-				# add the user to the leaderboard
-				self.leaderboard.append(
-					{
-						"member": guild.get_member(userid),
-						"xp": xp,
-						"level": level
-					}
-				)
+					# add the user to the leaderboard
+					self.leaderboard.append(
+						{
+							"member": guild.get_member(userid),
+							"xp": xp,
+							"level": level
+						}
+					)
 			
 			# sort the users by most xp to least xp
 			# I have no idea how to use lambda, but GitHub copilot said to use it
@@ -508,7 +511,7 @@ class Levelling(commands.Cog):
 		Views the levelling leaderboard. """
 		await interaction.response.defer(ephemeral=ephemeral)
 
-		lb = self.LeaderboardView(self.find_next_level, interaction.guild, usersperpage)
+		lb = self.LeaderboardView(self.bot, self.find_next_level, interaction.guild, usersperpage)
 
 		await lb.generate_leaderboard(interaction.guild)
 

@@ -576,15 +576,16 @@ class Economy(commands.Cog):
 
 			for row in rows:
 				member = guild.get_member(row["userid"])
-				balance = row["balance"]
+				if member is not None:
+					balance = row["balance"]
 
-				# add the user to the leaderboard
-				self.leaderboard.append(
-					{
-						"member": member,
-						"$$$": balance
-					}
-				)
+					# add the user to the leaderboard
+					self.leaderboard.append(
+						{
+							"member": member,
+							"$$$": balance
+						}
+					)
 			
 			# sort the users by most $$$ to least $$$
 			# I have no idea how to use lambda, but GitHub copilot said to use it

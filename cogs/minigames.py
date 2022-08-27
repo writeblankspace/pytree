@@ -165,14 +165,14 @@ class Minigames(commands.Cog):
 
 		r = random.uniform
 
-		bug_amount = [r(0.1, 2), r(0.1, 2), r(
-			0.1, 2), r(2, 5), r(2, 5), r(1, 10)]
+		bug_amount = [r(1, 2), r(1, 2), r(
+			1, 2), r(2, 5), r(2, 5), r(1, 10)]
 		# pick random from bug_amount
 		bugs = random.choice(bug_amount) * kill_multi
 		bugs = int(bugs)
 
 		if bugs == 0:
-			bugs = 1
+			bugs = 1 * kill_multi
 
 		embed = discord.Embed(
 			title=f"{theme.loader} {user.name} started a bug hunt!",

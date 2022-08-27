@@ -372,13 +372,12 @@ class Minigames(commands.Cog):
 
 		row = await psql.db.fetchrow(
 			"""--sql
-			SELECT balance, rolls FROM users
+			SELECT rolls FROM users
 			WHERE userid = $1 AND guildid = $2;
 			""",
 			userid, guildid
 		)
 
-		balance = row["balance"]
 		rolls = row["rolls"]
 
 		rolls += 1
@@ -453,17 +452,15 @@ class Minigames(commands.Cog):
 				text = f"You lost 2 {self.currency}  •  roll #{rolls}"
 			)
 		
-		balance += prize
-		
 		connection = await psql.db.acquire()
 		async with connection.transaction():
 			await psql.db.execute(
 				"""--sql
 				UPDATE users
-				SET balance = $1, rolls = $2
+				SET balance = balance + $1, rolls = rolls + 1
 				WHERE userid = $3 AND guildid = $4;
 				""",
-				balance, rolls, userid, guildid
+				prize, userid, guildid
 			)
 		await psql.db.release(connection)
 
@@ -591,97 +588,99 @@ class Minigames(commands.Cog):
 
 		await interaction.followup.send(embed=embed)
 	
-	"""
-	class BP(discord.ui.Select):
-		def __init__(self, balls: list):
-			options = []
+	def ignore():
+		pass
+		"""
+		class BP(discord.ui.Select):
+			def __init__(self, balls: list):
+				options = []
+
+				for ball in balls:
+					ball: tuple = ball
+					ballinfo = ball[2]
+
+					emoji: str = ball[0]
+					count: int = ball[1]
+					name: str = ballinfo[0]
+					reward: str = ballinfo[1]
+
+					if count == 1:
+						ballname = f"{name} ball"
+					else:
+						ballname = f"{name} balls"
+
+					options.append(
+						discord.SelectOption(
+							label = name,
+							description = f"{count} {ballname} - rewards {reward}:1",
+							emoji = emoji
+						)
+					)
+
+				super().__init__(placeholder='Pick a ball to bet on...', min_values=1, max_values=1, options=options)
+
+			async def callback(self, interaction: discord.Interaction):
+				await interaction.response.send_message(f'Your favourite colour is {self.values[0]}')
+
+		class BPView(discord.ui.View):
+			def __init__(self):
+				super().__init__()
+
+		@group.command(name="ballpit")
+		async def ballpit(self, interaction: discord.Interaction) -> None:
+			\"""
+			Start a ballpit game. Bet on a ball to come first in a series of 100 balls.\"""
+			await interaction.response.defer(ephemeral=False)
+
+			ballpit = []
+
+			balls = [
+				("⚫", 1, ("black", 99)),
+				("⚪", 2, ("white", 49)),
+				("🔴", 3, ("red", 32)),
+				("🟠", 4, ("orange", 24)),
+				("🟡", 7, ("yellow", 13)),
+				("🟢", 9, ("green", 10)),
+				("🔵", 10, ("blue", 9)),
+				("🟣", 14, ("purple", 6)),
+				("🟤", 50, ("brown", 1))
+			]
 
 			for ball in balls:
-				ball: tuple = ball
-				ballinfo = ball[2]
+				for i in range(ball[1]):
+					ballpit.append(ball[0])
+			
+			ogballpit = ballpit
+			shuffledballpit = random.sample(ballpit, len(ballpit))
 
-				emoji: str = ball[0]
-				count: int = ball[1]
-				name: str = ballinfo[0]
-				reward: str = ballinfo[1]
+			randomhehechance = random.randint(1, 13**13)
+			# lol 302875106592253 possible numbers
 
-				if count == 1:
-					ballname = f"{name} ball"
-				else:
-					ballname = f"{name} balls"
+			if randomhehechance == 13:
+				# one in 13**13
+				# THE STARS HAVE ALIGNED
+				ballpit = ogballpit
+				onein13tothepowerof13 = True
+			else:
+				ballpit = shuffledballpit
+				onein13tothepowerof13 = False
+			
+			embed = discord.Embed(
+				title = f"{theme.loader} Starting the ballpit!",
+				color = theme.colors.secondary,
+				description = f"Pick a colour from below:"
+			)
 
-				options.append(
-					discord.SelectOption(
-						label = name,
-						description = f"{count} {ballname} - rewards {reward}:1",
-						emoji = emoji
-					)
-				)
+			embed.set_footer(
+				text = "A ball will be drawn in 30 seconds"
+			)
 
-			super().__init__(placeholder='Pick a ball to bet on...', min_values=1, max_values=1, options=options)
+			view = self.BPView()
 
-		async def callback(self, interaction: discord.Interaction):
-			await interaction.response.send_message(f'Your favourite colour is {self.values[0]}')
+			view.add_item(self.BP(balls))
 
-	class BPView(discord.ui.View):
-		def __init__(self):
-			super().__init__()
-
-	@group.command(name="ballpit")
-	async def ballpit(self, interaction: discord.Interaction) -> None:
-		\"""
-		Start a ballpit game. Bet on a ball to come first in a series of 100 balls.\"""
-		await interaction.response.defer(ephemeral=False)
-
-		ballpit = []
-
-		balls = [
-			("⚫", 1, ("black", 99)),
-			("⚪", 2, ("white", 49)),
-			("🔴", 3, ("red", 32)),
-			("🟠", 4, ("orange", 24)),
-			("🟡", 7, ("yellow", 13)),
-			("🟢", 9, ("green", 10)),
-			("🔵", 10, ("blue", 9)),
-			("🟣", 14, ("purple", 6)),
-			("🟤", 50, ("brown", 1))
-		]
-
-		for ball in balls:
-			for i in range(ball[1]):
-				ballpit.append(ball[0])
-		
-		ogballpit = ballpit
-		shuffledballpit = random.sample(ballpit, len(ballpit))
-
-		randomhehechance = random.randint(1, 13**13)
-		# lol 302875106592253 possible numbers
-
-		if randomhehechance == 13:
-			# one in 13**13
-			# THE STARS HAVE ALIGNED
-			ballpit = ogballpit
-			onein13tothepowerof13 = True
-		else:
-			ballpit = shuffledballpit
-			onein13tothepowerof13 = False
-		
-		embed = discord.Embed(
-			title = f"{theme.loader} Starting the ballpit!",
-			color = theme.colors.secondary,
-			description = f"Pick a colour from below:"
-		)
-
-		embed.set_footer(
-			text = "A ball will be drawn in 30 seconds"
-		)
-
-		view = self.BPView()
-
-		view.add_item(self.BP(balls))
-
-		await interaction.followup.send(embed=embed, view=view)
-	"""
+			await interaction.followup.send(embed=embed, view=view)
+		"""
 	
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Minigames(bot))

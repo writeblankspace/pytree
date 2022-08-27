@@ -133,10 +133,10 @@ class Levelling(commands.Cog):
 					await psql.db.execute(
 						"""--sql
 						UPDATE users
-						SET xp = $1, balance = $2
+						SET xp = xp + $1, balance = balance + $2
 						WHERE userid = $3 AND guildid = $4
 						""",
-						xp, balance,
+						randxp * multi, currentlevel * 5,
 						userid, guildid
 					)
 				await psql.db.release(connection)

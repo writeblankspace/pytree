@@ -469,5 +469,219 @@ class Minigames(commands.Cog):
 
 		await interaction.followup.send(embed=embed)
 
+	@group.command(name="risk")
+	@app_commands.describe(
+		multiplier="how much to multiply the loss or prize by"
+	)
+	async def risk(self, interaction: discord.Interaction, multiplier: int = 1) -> None:
+		"""
+		Roll a d20. You win the amount you roll, but if you roll a NAT 1 you lose 200."""
+		await enough_money_actual_check(interaction, multiplier * 200)
+
+		await interaction.response.defer(ephemeral=False)
+
+		roll = random.randint(1, 20)
+
+		userid = interaction.user.id
+		guildid = interaction.guild.id
+
+		embed = discord.Embed(
+			title="Rolling a d20..."
+		)
+
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT rolls FROM users
+			WHERE userid = $1 AND guildid = $2;
+			""",
+			userid, guildid
+		)
+		rolls: int = row['rolls']
+
+
+		if roll == 1:
+			prize = 200 * multiplier
+			embed.description = f"You rolled the **Evil Nat 1**"
+			embed.set_footer(
+				text = f"You lost {prize} {self.currency}  •  roll #{rolls + 1}"
+			)
+			embed.color = theme.colors.red
+			prize *= -1
+		else:
+			prize = roll * multiplier
+			embed.description = f"You rolled a **{roll}**"
+			embed.set_footer(
+				text = f"You won {prize} {self.currency}  •  roll #{rolls + 1}"
+			)
+			embed.color = theme.colors.green
+		
+		connection = await psql.db.acquire()
+		async with connection.transaction():
+			await psql.db.execute(
+				"""--sql
+				UPDATE users
+				SET balance = balance + $1, rolls = rolls + 1
+				WHERE userid = $2 AND guildid = $3
+				""", 
+				prize, 
+				userid, guildid
+			)
+		await psql.db.release(connection)
+
+		await interaction.followup.send(embed=embed)
+
+	@group.command(name="antirisk")
+	@app_commands.describe(
+		multiplier="how much to multiply the loss or prize by"
+	)
+	async def antirisk(self, interaction: discord.Interaction, multiplier: int = 1) -> None:
+		"""
+		Roll a d20. You lose the amount you roll, but if you roll a NAT 20 you win 200."""
+		await enough_money_actual_check(interaction, multiplier * 19)
+
+		await interaction.response.defer(ephemeral=False)
+
+		roll = random.randint(1, 20)
+
+		userid = interaction.user.id
+		guildid = interaction.guild.id
+
+		embed = discord.Embed(
+			title="Rolling a d20..."
+		)
+
+		row = await psql.db.fetchrow(
+			"""--sql
+			SELECT rolls FROM users
+			WHERE userid = $1 AND guildid = $2;
+			""",
+			userid, guildid
+		)
+		rolls: int = row['rolls']
+
+
+		if roll == 20:
+			prize = 200 * multiplier
+			embed.description = f"You rolled the **Glorious Nat 1**"
+			embed.set_footer(
+				text = f"You won {prize} {self.currency}  •  roll #{rolls + 1}"
+			)
+			embed.color = theme.colors.green
+		else:
+			prize = roll * multiplier
+			embed.description = f"You rolled a **{roll}**"
+			embed.set_footer(
+				text = f"You lost {prize} {self.currency}  •  roll #{rolls + 1}"
+			)
+			embed.color = theme.colors.red
+			prize *= -1
+		
+		connection = await psql.db.acquire()
+		async with connection.transaction():
+			await psql.db.execute(
+				"""--sql
+				UPDATE users
+				SET balance = balance + $1, rolls = rolls + 1
+				WHERE userid = $2 AND guildid = $3
+				""", 
+				prize, 
+				userid, guildid
+			)
+		await psql.db.release(connection)
+
+		await interaction.followup.send(embed=embed)
+	
+	"""
+	class BP(discord.ui.Select):
+		def __init__(self, balls: list):
+			options = []
+
+			for ball in balls:
+				ball: tuple = ball
+				ballinfo = ball[2]
+
+				emoji: str = ball[0]
+				count: int = ball[1]
+				name: str = ballinfo[0]
+				reward: str = ballinfo[1]
+
+				if count == 1:
+					ballname = f"{name} ball"
+				else:
+					ballname = f"{name} balls"
+
+				options.append(
+					discord.SelectOption(
+						label = name,
+						description = f"{count} {ballname} - rewards {reward}:1",
+						emoji = emoji
+					)
+				)
+
+			super().__init__(placeholder='Pick a ball to bet on...', min_values=1, max_values=1, options=options)
+
+		async def callback(self, interaction: discord.Interaction):
+			await interaction.response.send_message(f'Your favourite colour is {self.values[0]}')
+
+	class BPView(discord.ui.View):
+		def __init__(self):
+			super().__init__()
+
+	@group.command(name="ballpit")
+	async def ballpit(self, interaction: discord.Interaction) -> None:
+		\"""
+		Start a ballpit game. Bet on a ball to come first in a series of 100 balls.\"""
+		await interaction.response.defer(ephemeral=False)
+
+		ballpit = []
+
+		balls = [
+			("⚫", 1, ("black", 99)),
+			("⚪", 2, ("white", 49)),
+			("🔴", 3, ("red", 32)),
+			("🟠", 4, ("orange", 24)),
+			("🟡", 7, ("yellow", 13)),
+			("🟢", 9, ("green", 10)),
+			("🔵", 10, ("blue", 9)),
+			("🟣", 14, ("purple", 6)),
+			("🟤", 50, ("brown", 1))
+		]
+
+		for ball in balls:
+			for i in range(ball[1]):
+				ballpit.append(ball[0])
+		
+		ogballpit = ballpit
+		shuffledballpit = random.sample(ballpit, len(ballpit))
+
+		randomhehechance = random.randint(1, 13**13)
+		# lol 302875106592253 possible numbers
+
+		if randomhehechance == 13:
+			# one in 13**13
+			# THE STARS HAVE ALIGNED
+			ballpit = ogballpit
+			onein13tothepowerof13 = True
+		else:
+			ballpit = shuffledballpit
+			onein13tothepowerof13 = False
+		
+		embed = discord.Embed(
+			title = f"{theme.loader} Starting the ballpit!",
+			color = theme.colors.secondary,
+			description = f"Pick a colour from below:"
+		)
+
+		embed.set_footer(
+			text = "A ball will be drawn in 30 seconds"
+		)
+
+		view = self.BPView()
+
+		view.add_item(self.BP(balls))
+
+		await interaction.followup.send(embed=embed, view=view)
+	"""
+	
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Minigames(bot))

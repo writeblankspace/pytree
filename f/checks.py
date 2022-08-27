@@ -23,8 +23,7 @@ def owner_only():
 		return True
 	return app_commands.check(actual_check)
 
-def has_enough_money(amount: int):
-	async def actual_check(interaction: Interaction):
+async def enough_money_actual_check(interaction: Interaction, amount: int):
 		await psql.check_user(
 			interaction.user.id, interaction.guild.id
 		)
@@ -48,5 +47,9 @@ def has_enough_money(amount: int):
 				)
 			raise CustomError(embed)
 		return True
+
+def has_enough_money(amount: int):
+	async def actual_check(interaction: Interaction):
+		return await enough_money_actual_check(interaction, amount)
 	return app_commands.check(actual_check)
 

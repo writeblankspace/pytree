@@ -95,6 +95,7 @@ class Levelling(commands.Cog):
 
 				# check stuff first to avoid errors
 				await psql.check_user(userid, guildid)
+				await psql.check_guild(guildid)
 
 				row = await psql.db.fetchrow(
 					"""--sql

@@ -25,8 +25,7 @@ class Psql():
 		await self.db.execute(
 			"""--sql
 			CREATE TABLE IF NOT EXISTS guilds (
-				guildid BIGINT PRIMARY KEY,
-				starboardid BIGINT
+				guildid BIGINT PRIMARY KEY
 			); 
 
 			CREATE TABLE IF NOT EXISTS users (
@@ -43,6 +42,12 @@ class Psql():
 			"**Quick notes:**",
 			"- try it out by typing `/nb quick`"
 		])
+
+		guilds_columns = (
+			("guildid", "BIGINT", None),
+			("starboardid", "BIGINT", None),
+			("farmid", "BIGINT", None)
+		)
 
 		users_columns = [
 			("userid", "BIGINT", None),
@@ -69,6 +74,23 @@ class Psql():
 					ALTER COLUMN {column[0]} SET DEFAULT {column[2]};
 
 					UPDATE users
+					SET {column[0]} = {column[2]}
+					WHERE {column[0]} IS NULL;"""
+				)
+		
+		for column in guilds_columns:
+			await self.db.execute(
+				f"""--sql
+				ALTER TABLE guilds
+				ADD COLUMN IF NOT EXISTS {column[0]} {column[1]};"""
+			)
+			if column[2] is not None:
+				await self.db.execute(
+					f"""--sql
+					ALTER TABLE guilds
+					ALTER COLUMN {column[0]} SET DEFAULT {column[2]};
+
+					UPDATE guilds
 					SET {column[0]} = {column[2]}
 					WHERE {column[0]} IS NULL;"""
 				)

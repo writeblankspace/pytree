@@ -432,7 +432,7 @@ class Minigames(commands.Cog):
 		else:
 			win = False
 			# no prize rip
-			prize = -2
+			prize = -1
 			description = "Better luck next time!"
 			embed.color = theme.colours.red
 		
@@ -448,7 +448,7 @@ class Minigames(commands.Cog):
 			)
 		else:
 			embed.set_footer(
-				text = f"You lost 2 {self.currency}  •  roll #{rolls}"
+				text = f"You lost 1 {self.currency}  •  roll #{rolls}"
 			)
 		
 		connection = await psql.db.acquire()

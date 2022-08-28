@@ -457,7 +457,7 @@ class Minigames(commands.Cog):
 				"""--sql
 				UPDATE users
 				SET balance = balance + $1, rolls = rolls + 1
-				WHERE userid = $3 AND guildid = $4;
+				WHERE userid = $2 AND guildid = $3;
 				""",
 				prize, userid, guildid
 			)

@@ -46,7 +46,8 @@ class Psql():
 		guilds_columns = (
 			("guildid", "BIGINT", None),
 			("starboardid", "BIGINT", None),
-			("farmid", "BIGINT", None)
+			("farmid", "BIGINT", None),
+			("blight_strength", "INT", 0)
 		)
 
 		users_columns = [
@@ -59,6 +60,7 @@ class Psql():
 			("equipped", "TEXT", "''"),
 			("rolls", "INTEGER", "0"),
 			("notebook", "JSON", "JSON '{\"data\": [\"" + nb_default + "\"]}'"),
+			("planted", "INTEGER", "0")
 		]
 
 		for column in users_columns:

@@ -33,6 +33,7 @@ initial_extensions = [
 	"cogs.search",
 	"cogs.levelling",
 	"cogs.economy",
+	"cogs.farm",
 	"cogs.starboard",
 	"cogs.notebook",
 	"cogs.minigames"

@@ -35,11 +35,11 @@ class Farm(commands.Cog):
 				watering = 1
 			return int(1300 * (0.95 ** watering))
 		
-		def get_bloom_strength(self):
-			strength = self.get_blight_strength
-			strength *= float(random.randint(1, 10)) * 0.01
+		async def get_bloom_strength(self, guildid):
+			strength = await self.get_blight_strength(guildid)
+			strength *= float(random.randint(1, 7)) * 0.0001
 			strength += 1
-			return strength
+			return round(strength, 3)
 
 		def get_strengthened_percentage(self) -> int:
 			total_users = len(
@@ -114,7 +114,6 @@ class Farm(commands.Cog):
 
 	@tasks.loop(seconds=1)
 	async def farmloop(self, guilds: list):
-
 		connection = await psql.db.acquire()
 		async with connection.transaction():
 			for guild in guilds:
@@ -140,6 +139,7 @@ class Farm(commands.Cog):
 			channel: discord.TextChannel = self.bot.get_channel(channelid)
 
 			bloom_chance = ff.get_bloom_chance()
+			bloom_strength = await ff.get_bloom_strength(guildid)
 			strengthened_percentage = ff.get_strengthened_percentage()
 
 			connection = await psql.db.acquire()
@@ -156,6 +156,10 @@ class Farm(commands.Cog):
 
 			blight_strength = await ff.get_blight_strength(guildid)
 			blight_chance = await ff.get_blight_chance(guildid)
+
+			# farm stuff
+			with open('farm.x.txt', 'w') as f:
+				f.write(f"bloom_chance = {bloom_chance}\nbloom_strength = {bloom_strength}\nstrengthened_percentage = {strengthened_percentage}\nblight_strength = {blight_strength}\nblight_chance = {blight_chance}\n\n***\n")
 
 			is_blight = random.randint(1, blight_chance)
 
@@ -196,7 +200,7 @@ class Farm(commands.Cog):
 				# blooms are allowed now!
 				is_bloom = random.randint(1, bloom_chance)
 				if is_bloom == 1:
-					strength = ff.get_bloom_strength()
+					strength = await ff.get_bloom_strength()
 
 					connection = await psql.db.acquire()
 					async with connection.transaction():

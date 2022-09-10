@@ -17,7 +17,13 @@ class Farm(commands.Cog):
 	async def stats(self, interaction: discord.Interaction) -> None:
 		"""
 		Gets the stats of the server's farm"""
-		pass
+		guildid = interaction.guild.id
+		userid = interaction.user.id
+
+		await psql.check_guild(guildid)
+		await psql.check_user(userid, guildid)
+
+		
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Farm(bot))

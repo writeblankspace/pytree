@@ -47,7 +47,7 @@ class Psql():
 			("guildid", "BIGINT", None),
 			("starboardid", "BIGINT", None),
 			("farmid", "BIGINT", None),
-			("blight_strength", "INT", 0)
+			("blight_strength", "INTEGER", 1)
 		)
 
 		users_columns = [

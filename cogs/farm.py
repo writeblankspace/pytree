@@ -12,7 +12,8 @@ class Farm(commands.Cog):
 		self.ff = self.FF()
 		self.farmloop.start(
 			guilds = [
-				(743128328390836325, 743128328705409078)
+				(743128328390836325, 743128328705409078),
+				(999340987392462878, 999340987392462878)
 			]
 		)
 	
@@ -30,10 +31,11 @@ class Farm(commands.Cog):
 			# every bot restart, this resets
 		
 		def get_bloom_chance(self):
+			# 5400
 			watering = len(self.watering_users)
 			if watering <= 0:
 				watering = 1
-			return int(1300 * (0.95 ** watering))
+			return int(100 * (0.95 ** watering))
 		
 		async def get_bloom_strength(self, guildid):
 			strength = await self.get_blight_strength(guildid)
@@ -75,8 +77,9 @@ class Farm(commands.Cog):
 			return int(blight_strength * (1.10 ** weeding))
 
 		async def get_blight_chance(self, guildid: int) -> int:
+			# 500000 
 			strength = await self.get_blight_strength(guildid)
-			return int(50000 - strength)
+			return int(100 - strength)
 		
 		async def reset(self, guildid: int, blight: bool = False):
 			strengthened = self.get_strengthened_percentage()
@@ -93,12 +96,17 @@ class Farm(commands.Cog):
 						UPDATE users
 						SET planted = planted - ((planted / 100) * $1)
 						WHERE guildid = $2;
-
-						UPDATE guilds
-						SET blight_strength = 0
-						WHERE guildid = $2;
 						""",
 						strengthened, guildid
+					)
+
+					await psql.db.execute(
+						"""--sql
+						UPDATE guilds
+						SET blight_strength = 0
+						WHERE guildid = $1;
+						""",
+						guildid
 					)
 				await psql.db.release(connection)
 
@@ -117,6 +125,7 @@ class Farm(commands.Cog):
 		connection = await psql.db.acquire()
 		async with connection.transaction():
 			for guild in guilds:
+				await psql.check_guild(guild[0])
 				# make sure all defaults are done
 				# and channel id's are set
 				await psql.db.execute(
@@ -161,6 +170,9 @@ class Farm(commands.Cog):
 			with open('farm.x.txt', 'w') as f:
 				f.write(f"bloom_chance = {bloom_chance}\nbloom_strength = {bloom_strength}\nstrengthened_percentage = {strengthened_percentage}\nblight_strength = {blight_strength}\nblight_chance = {blight_chance}\n\n***\n")
 
+			if blight_chance <= 0:
+				blight_chance = 1
+
 			is_blight = random.randint(1, blight_chance)
 
 			if is_blight == 1:
@@ -170,16 +182,27 @@ class Farm(commands.Cog):
 					color = theme.colours.red
 				)
 
-				row = await psql.db.fethcrow(
-					"""-sql
-					SELECT SUM(planted), COUNT(userid)
+				planted = await psql.db.fetchrow(
+					"""--sql
+					SELECT SUM(planted)
 					FROM users
 					WHERE guildid = $1 and planted > 0;""",
 					guildid
 				)
 
-				planted = row[0]
-				users = row[1]
+				users = await psql.db.fetchrow(
+					"""--sql
+					SELECT COUNT(userid)
+					FROM users
+					WHERE guildid = $1 and planted > 0;""",
+					guildid
+				)
+
+				planted = planted[0]
+				if planted == None:
+					planted = 0
+
+				users = users[0]
 				embed.description = f"With a strength of {blight_strength}, the Blight wiped out **{planted} crops** from {users} farmers."
 
 				await ff.reset(guildid, blight = True)
@@ -219,7 +242,7 @@ class Farm(commands.Cog):
 						color = theme.colours.green
 					)
 
-					embed.description = f"All crops have grown by **{(strength - 1) * 100}%**."
+					embed.description = f"All crops have grown by **{strength}**."
 					await channel.send(embed=embed)
 	
 	@farmloop.before_loop

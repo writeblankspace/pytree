@@ -200,7 +200,7 @@ class Farm(commands.Cog):
 				# blooms are allowed now!
 				is_bloom = random.randint(1, bloom_chance)
 				if is_bloom == 1:
-					strength = await ff.get_bloom_strength()
+					strength = await ff.get_bloom_strength(guildid)
 
 					connection = await psql.db.acquire()
 					async with connection.transaction():

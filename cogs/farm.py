@@ -12,8 +12,8 @@ class Farm(commands.Cog):
 		self.ff = self.FF()
 		self.farmloop.start(
 			guilds = [
-				(743128328390836325, 743128328705409078),
-				(999340987392462878, 999340987392462878)
+				(743128328390836325, 743128328705409078)#,
+				#(999340987392462878, 1018175324283994122)
 			]
 		)
 	
@@ -79,7 +79,7 @@ class Farm(commands.Cog):
 		async def get_blight_chance(self, guildid: int) -> int:
 			# 500000 
 			strength = await self.get_blight_strength(guildid)
-			return int(100 - strength)
+			return int(500 - strength)
 		
 		async def reset(self, guildid: int, blight: bool = False):
 			strengthened = self.get_strengthened_percentage()
@@ -216,7 +216,7 @@ class Farm(commands.Cog):
 						embed.set_footer(
 							text = "This does not affect this server, but all actions are available again."
 						)
-						channelb = await self.bot.get_channel(guildb[1])
+						channelb = self.bot.get_channel(guildb[1])
 						await channelb.send(embed=embed)
 
 			else:

@@ -223,8 +223,6 @@ class Farm(commands.Cog):
 				# blooms are allowed now!
 				is_bloom = random.randint(1, bloom_chance)
 				if is_bloom == 1:
-					strength = await ff.get_bloom_strength(guildid)
-
 					connection = await psql.db.acquire()
 					async with connection.transaction():
 						await psql.db.execute(
@@ -233,7 +231,7 @@ class Farm(commands.Cog):
 							SET planted = planted * $1
 							WHERE guildid = $2;
 							""",
-							strength, guildid
+							bloom_strength, guildid
 						)
 					await psql.db.release(connection)
 
@@ -242,7 +240,7 @@ class Farm(commands.Cog):
 						color = theme.colours.green
 					)
 
-					embed.description = f"All crops have grown by **{strength}**."
+					embed.description = f"All crops have grown by **{bloom_strength}**."
 					await channel.send(embed=embed)
 	
 	@farmloop.before_loop

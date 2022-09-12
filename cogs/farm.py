@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import tasks, commands
 from db.sql import *
 from f.__index__ import *
+import time
 
 class Farm(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
@@ -28,6 +29,7 @@ class Farm(commands.Cog):
 			self.watering_users = []
 			self.strengthening_users = []
 			self.weeding_users = []
+			self.harvested_users = []
 			# every bot restart, this resets
 		
 		def get_bloom_chance(self):
@@ -119,6 +121,7 @@ class Farm(commands.Cog):
 			self.watering_users = []
 			self.strengthening_users = []
 			self.weeding_users = []
+			self.harvested_users = []
 
 			if blight:
 				connection = await psql.db.acquire()
@@ -293,18 +296,92 @@ class Farm(commands.Cog):
 	async def before_farmloop(self):
 		await self.bot.wait_until_ready()
 	
+	def check_user_actions(self, member: discord.User):
+		# ff.watering_users
+		# ff.strengthening_users
+		# ff.weeding_users
+		# ff.harvested_users
+
+		ff = self.ff
+
+		actions = []
+
+		if member in ff.watering_users:
+			actions.append("watering")
+		elif member in ff.strengthening_users:
+			actions.append("strengthening")
+		elif member in ff.weeding_users:
+			actions.append("weeding")
+		elif member in ff.harvested_users: 
+			actions.append("harvest")
+		
+		# remember that farmer actions are watering | strengthening | weeding | harvesting
+		# weed and harvest can only be done once per bot cycle
+		# watering and strengthening can be switched
+		# and up to 2 actions per bot cycle
+
+		return actions
+		
 
 	@group.command(name="stats")
-	async def stats(self, interaction: discord.Interaction) -> None:
+	async def stats(self, interaction: discord.Interaction, member: discord.User = None) -> None:
 		"""
 		Gets the stats of the server's farm"""
+		await interaction.response.defer(ephemeral = False)
+		if member is None:
+			member = interaction.user
+
 		guildid = interaction.guild.id
-		userid = interaction.user.id
+		userid = member.id
 
 		await psql.check_guild(guildid)
 		await psql.check_user(userid, guildid)
 
+		userrow = await psql.db.fetchrow(
+			"""--sql
+			SELECT planted FROM users
+			WHERE userid = $1 AND guildid = $2;
+			""",
+			userid, guildid
+		)
+
+		planted = userrow["planted"]
+
+		bloom_chance = self.ff.get_bloom_chance()
+
+		bloom_strength = await self.ff.get_bloom_strength(guildid)
+		bloom_strength_og = bloom_strength
+		# human-readable bloom strength
+		bloom_strength -= 1
+		bloom_strength = round(bloom_strength * 100, 3)
+
+		strengthened_percentage = self.ff.get_strengthened_percentage()
+		blight_strength = await self.ff.get_blight_strength(guildid)
+		blight_chance = await self.ff.get_blight_chance(guildid)
 		
+		embed = discord.Embed(
+			title = f"{member.name}'s farmer stats",
+			description = f"{planted} planted crops",
+			color = theme.colours.primary
+		)
+
+		bloom_percent_chance = round((1 / bloom_chance) * 100, 3)
+		blight_percent_chance = round((1 / blight_chance) * 100, 3)
+
+		bloom_timestamp = f"<t:{int(time.time() + (bloom_chance * 2))}:R>"
+		blight_timestamp = f"<t:{int(time.time() + blight_chance)}:R>"
+
+		embed.add_field(
+			name = f"Bloom ({bloom_percent_chance}% chance)",
+			value = f"Estimated Bloom time: {bloom_timestamp}\nEstimated crop growth: {int(planted * (bloom_strength_og - 1))} ({bloom_strength}%)"
+		)
+
+		embed.add_field(
+			name = f"Blight ({blight_percent_chance}% chance)",
+			value = f"Maximum Blight time: {blight_timestamp}\nSafe crops: {int((planted / 100) * strengthened_percentage)} ({strengthened_percentage}%)"
+		)
+
+		await interaction.followup.send(embed=embed)
 
 async def setup(bot: commands.Bot) -> None:
 	await bot.add_cog(Farm(bot))

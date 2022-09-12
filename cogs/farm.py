@@ -126,7 +126,6 @@ class Farm(commands.Cog):
 			if blight:
 				connection = await psql.db.acquire()
 				async with connection.transaction():
-					print("blight at...")
 					await psql.db.execute(
 						"""--sql
 						UPDATE users
@@ -144,7 +143,6 @@ class Farm(commands.Cog):
 						""",
 						guildid
 					)
-					print("blight successful!\n\n")
 				await psql.db.release(connection)
 
 
@@ -267,7 +265,6 @@ class Farm(commands.Cog):
 				if is_bloom == 1:
 					connection = await psql.db.acquire()
 					async with connection.transaction():
-						print(f"blooming at {bloom_strength}...")
 						await psql.db.execute(
 							"""--sql
 							UPDATE users
@@ -278,7 +275,6 @@ class Farm(commands.Cog):
 							# 1.01 111 to 1.05555 multiplier
 							#    1.111% increase to 5.555% increase
 						)
-						print("bloom successful!\n\n")
 					await psql.db.release(connection)
 
 					embed = discord.Embed(

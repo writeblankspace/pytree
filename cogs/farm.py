@@ -33,15 +33,47 @@ class Farm(commands.Cog):
 		def get_bloom_chance(self):
 			# 5400
 			watering = len(self.watering_users)
-			if watering <= 0:
-				watering = 1
-			return int(100 * (0.95 ** watering))
+			return int(15 * (0.95 ** watering))
 		
 		async def get_bloom_strength(self, guildid):
-			strength = await self.get_blight_strength(guildid)
-			strength *= float(random.randint(1, 7)) * 0.0001
-			strength += 1
-			return round(strength, 3)
+			blight_strength: int = await self.get_blight_strength(guildid)
+			# blight_strength is around 1 - 500000
+
+			if blight_strength >= 50000:
+				max_strength = 999
+			if blight_strength >= 5000:
+				max_strength = 777
+			if blight_strength >= 500:
+				max_strength = 555
+			else:
+				max_strength = 500
+
+			# get the last two numbers
+			blight_strength_str: str = f"000{blight_strength}"
+			bloom_strength: int = int(blight_strength_str[-2:])
+			bloom_strength += random.randint(1, max_strength)
+
+			if bloom_strength < 100:
+				bloom_strength += random.randint(111, 333)
+			
+			if bloom_strength > 4555:
+				bloom_strength = 4555
+			
+			bloom_strength: float = float(bloom_strength)
+			# this is around 111 - 999
+			# we want to get a multiplier, eg
+			# 1.01 234
+			#    1.234% increase
+			#                 1 00   %
+			bloom_strength *= 0.00001
+			# we now get      0.00 111 - 0.04555
+			# aka                0.111% increase to 4.555% increase
+			# these decimals are too low; we want at least 1% increase
+			bloom_strength += 1.01
+			# we now get      1.01 111 - 1.05555
+			# aka                1.111% increase to 5.555% increase
+			# this is a good range
+			return bloom_strength
 
 		def get_strengthened_percentage(self) -> int:
 			total_users = len(
@@ -79,7 +111,7 @@ class Farm(commands.Cog):
 		async def get_blight_chance(self, guildid: int) -> int:
 			# 500000 
 			strength = await self.get_blight_strength(guildid)
-			return int(500 - strength)
+			return int(100 - strength)
 		
 		async def reset(self, guildid: int, blight: bool = False):
 			strengthened = self.get_strengthened_percentage()
@@ -91,10 +123,11 @@ class Farm(commands.Cog):
 			if blight:
 				connection = await psql.db.acquire()
 				async with connection.transaction():
+					print("blight at...")
 					await psql.db.execute(
 						"""--sql
 						UPDATE users
-						SET planted = planted - ((planted / 100) * $1)
+						SET planted = ((planted / 100) * $1)
 						WHERE guildid = $2;
 						""",
 						strengthened, guildid
@@ -108,6 +141,7 @@ class Farm(commands.Cog):
 						""",
 						guildid
 					)
+					print("blight successful!\n\n")
 				await psql.db.release(connection)
 
 
@@ -203,7 +237,12 @@ class Farm(commands.Cog):
 					planted = 0
 
 				users = users[0]
-				embed.description = f"With a strength of {blight_strength}, the Blight wiped out **{planted} crops** from {users} farmers."
+				if users > 1 or users < 1:
+					farmers = f"{users} farmers"
+				else:
+					farmers = f"1 farmer"
+
+				embed.description = f"With a strength of {blight_strength}, the Blight wiped out **{planted} crops** from {farmers}."
 
 				await ff.reset(guildid, blight = True)
 
@@ -225,14 +264,18 @@ class Farm(commands.Cog):
 				if is_bloom == 1:
 					connection = await psql.db.acquire()
 					async with connection.transaction():
+						print(f"blooming at {bloom_strength}...")
 						await psql.db.execute(
 							"""--sql
 							UPDATE users
-							SET planted = planted * $1
+							SET planted = (planted * $1) / 1000000
 							WHERE guildid = $2;
 							""",
-							bloom_strength, guildid
+							bloom_strength * 1000000.0, guildid
+							# 1.01 111 to 1.05555 multiplier
+							#    1.111% increase to 5.555% increase
 						)
+						print("bloom successful!\n\n")
 					await psql.db.release(connection)
 
 					embed = discord.Embed(
@@ -240,7 +283,10 @@ class Farm(commands.Cog):
 						color = theme.colours.green
 					)
 
-					embed.description = f"All crops have grown by **{bloom_strength}**."
+					bloom_strength -= 1
+					bloom_strength = round(bloom_strength * 100, 3)
+
+					embed.description = f"All crops have grown by **{bloom_strength}%**."
 					await channel.send(embed=embed)
 	
 	@farmloop.before_loop

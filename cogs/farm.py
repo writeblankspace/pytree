@@ -35,7 +35,7 @@ class Farm(commands.Cog):
 		def get_bloom_chance(self):
 			# 5400
 			watering = len(self.watering_users)
-			return int(15 * (0.95 ** watering))
+			return int(540 * (0.95 ** watering))
 		
 		async def get_bloom_strength(self, guildid):
 			blight_strength: int = await self.get_blight_strength(guildid)
@@ -113,7 +113,7 @@ class Farm(commands.Cog):
 		async def get_blight_chance(self, guildid: int) -> int:
 			# 500000 
 			strength = await self.get_blight_strength(guildid)
-			return int(100 - strength)
+			return int(5000 - strength)
 		
 		async def reset(self, guildid: int, blight: bool = False):
 			strengthened = self.get_strengthened_percentage()

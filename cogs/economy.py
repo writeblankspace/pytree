@@ -407,7 +407,7 @@ class Economy(commands.Cog):
 		self,
 		interaction: discord.Interaction,
 		member: discord.User = None,
-		ephemeral: bool = True
+		ephemeral: bool = False
 		) -> None:
 		"""
 		Gets the balance and inventory of a user. """
@@ -731,7 +731,7 @@ class Economy(commands.Cog):
 		ephemeral = "whether or not others should see the bot's reply",
 		usersperpage = "the number of users to show per page"
 	)
-	async def leaderboard(self, interaction: discord.Interaction, ephemeral: bool = True, usersperpage: int = 5) -> None:
+	async def leaderboard(self, interaction: discord.Interaction, ephemeral: bool = False, usersperpage: int = 5) -> None:
 		"""
 		Views the economy leaderboard. """
 		await interaction.response.defer(ephemeral=ephemeral)

@@ -149,7 +149,7 @@ class Levelling(commands.Cog):
 		member = "the member whose rank you'd like to view",
 		ephemeral = "whether or not others should see the bot's reply"
 	)
-	async def rank(self, interaction: discord.Interaction, member: discord.User = None, ephemeral: bool = True) -> None:
+	async def rank(self, interaction: discord.Interaction, member: discord.User = None, ephemeral: bool = False) -> None:
 		"""
 		Views a user's rank. """
 		if member == None:
@@ -507,7 +507,7 @@ class Levelling(commands.Cog):
 		ephemeral = "whether or not others should see the bot's reply",
 		usersperpage = "the number of users to show per page"
 	)
-	async def leaderboard(self, interaction: discord.Interaction, ephemeral: bool = True, usersperpage: int = 5) -> None:
+	async def leaderboard(self, interaction: discord.Interaction, ephemeral: bool = False, usersperpage: int = 5) -> None:
 		"""
 		Views the levelling leaderboard. """
 		await interaction.response.defer(ephemeral=ephemeral)

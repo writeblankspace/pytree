@@ -8,15 +8,23 @@ import time
 class Farm(commands.Cog):
 	def __init__(self, bot: commands.Bot) -> None:
 		self.bot = bot
+		self.farmloop.cancel()
+
+		guilds = [
+			(743128328390836325, 743128328705409078),
+			(999340987392462878, 1018175324283994122)
+		]
 
 		# farm funcs
-		self.ff = self.FF()
+		self.ff = {}
+
+		for guild in guilds:
+			guildid = guild[0]
+			self.ff[guildid] = self.FF(guildid)
+
 		self.farmloop.start(
-			guilds = [
-				(743128328390836325, 743128328705409078)#,
-				#(999340987392462878, 1018175324283994122)
-			]
-		)
+				guilds = guilds
+			)
 	
 	group = app_commands.Group(
 		name = "farm",
@@ -24,21 +32,25 @@ class Farm(commands.Cog):
 	)
 
 	class FF():
-		def __init__(self):
+		def __init__(self, guildid: int):
+			self.guildid = guildid
 			# users
 			self.watering_users = []
 			self.strengthening_users = []
 			self.weeding_users = []
 			self.harvested_users = []
 			# every bot restart, this resets
+
+			self.bloom_default = 50 #5400
+			self.blight_default = 250 #500000
 		
 		def get_bloom_chance(self):
 			# 5400
 			watering = len(self.watering_users)
-			return int(540 * (0.95 ** watering))
+			return int(self.bloom_default * (0.95 ** watering))
 		
-		async def get_bloom_strength(self, guildid):
-			blight_strength: int = await self.get_blight_strength(guildid)
+		async def get_bloom_strength(self):
+			blight_strength: int = await self.get_blight_strength()
 			# blight_strength is around 1 - 500000
 
 			if blight_strength >= 50000:
@@ -95,7 +107,7 @@ class Farm(commands.Cog):
 		
 			return int(percent)
 		
-		async def get_blight_strength(self, guildid: int) -> int:
+		async def get_blight_strength(self) -> int:
 			weeding = len(self.weeding_users)
 
 			row = await psql.db.fetchrow(
@@ -103,19 +115,19 @@ class Farm(commands.Cog):
 				SELECT blight_strength FROM guilds
 				WHERE guildid = $1;
 				""", 
-				guildid
+				self.guildid
 			)
 
 			blight_strength = row["blight_strength"]
 
 			return int(blight_strength * (1.10 ** weeding))
 
-		async def get_blight_chance(self, guildid: int) -> int:
+		async def get_blight_chance(self) -> int:
 			# 500000 
-			strength = await self.get_blight_strength(guildid)
-			return int(5000 - strength)
+			strength = await self.get_blight_strength()
+			return int(self.blight_default - strength)
 		
-		async def reset(self, guildid: int, blight: bool = False):
+		async def reset(self, blight: bool = False):
 			strengthened = self.get_strengthened_percentage()
 
 			self.watering_users = []
@@ -132,7 +144,7 @@ class Farm(commands.Cog):
 						SET planted = ((planted / 100) * $1)
 						WHERE guildid = $2;
 						""",
-						strengthened, guildid
+						strengthened, self.guildid
 					)
 
 					await psql.db.execute(
@@ -141,7 +153,7 @@ class Farm(commands.Cog):
 						SET blight_strength = 0
 						WHERE guildid = $1;
 						""",
-						guildid
+						self.guildid
 					)
 				await psql.db.release(connection)
 
@@ -173,17 +185,16 @@ class Farm(commands.Cog):
 				)
 		await psql.db.release(connection)
 
-		ff = self.ff
-
 		for guild in guilds:
 			guilddata = guild
 			guildid = guilddata[0]
+			ff: self.FF = self.ff[guildid]
 			guild: discord.Guild = self.bot.get_guild(guildid)
 			channelid = guilddata[1]
 			channel: discord.TextChannel = self.bot.get_channel(channelid)
 
 			bloom_chance = ff.get_bloom_chance()
-			bloom_strength = await ff.get_bloom_strength(guildid)
+			bloom_strength = await ff.get_bloom_strength()
 			strengthened_percentage = ff.get_strengthened_percentage()
 
 			connection = await psql.db.acquire()
@@ -198,8 +209,8 @@ class Farm(commands.Cog):
 				)
 			await psql.db.release(connection)
 
-			blight_strength = await ff.get_blight_strength(guildid)
-			blight_chance = await ff.get_blight_chance(guildid)
+			blight_strength = await ff.get_blight_strength()
+			blight_chance = await ff.get_blight_chance()
 
 			# farm stuff
 			with open('farm.x.txt', 'w') as f:
@@ -245,19 +256,9 @@ class Farm(commands.Cog):
 
 				embed.description = f"With a strength of {blight_strength}, the Blight wiped out **{planted} crops** from {farmers}."
 
-				await ff.reset(guildid, blight = True)
+				await ff.reset(blight = True)
 
 				await channel.send(embed=embed)
-
-				for guildb in guilds:
-					if guildb[0] != guildid:
-						myembed = embed
-						myembed.title = f"Blight in server {guild.name}"
-						embed.set_footer(
-							text = "This does not affect this server, but all actions are available again."
-						)
-						channelb = self.bot.get_channel(guildb[1])
-						await channelb.send(embed=embed)
 
 			else:
 				# blooms are allowed now!
@@ -292,13 +293,13 @@ class Farm(commands.Cog):
 	async def before_farmloop(self):
 		await self.bot.wait_until_ready()
 	
-	def check_user_actions(self, member: discord.User):
+	def check_user_actions(self, guildid: int, member: discord.User):
 		# ff.watering_users
 		# ff.strengthening_users
 		# ff.weeding_users
 		# ff.harvested_users
 
-		ff = self.ff
+		ff = self.ff[guildid]
 
 		actions = []
 
@@ -318,7 +319,6 @@ class Farm(commands.Cog):
 
 		return actions
 		
-
 	@group.command(name="stats")
 	async def stats(self, interaction: discord.Interaction, member: discord.User = None) -> None:
 		"""
@@ -343,17 +343,19 @@ class Farm(commands.Cog):
 
 		planted = userrow["planted"]
 
-		bloom_chance = self.ff.get_bloom_chance()
+		ff = self.ff[guildid]
 
-		bloom_strength = await self.ff.get_bloom_strength(guildid)
+		bloom_chance = ff.get_bloom_chance()
+
+		bloom_strength = await ff.get_bloom_strength()
 		bloom_strength_og = bloom_strength
 		# human-readable bloom strength
 		bloom_strength -= 1
 		bloom_strength = round(bloom_strength * 100, 3)
 
-		strengthened_percentage = self.ff.get_strengthened_percentage()
-		blight_strength = await self.ff.get_blight_strength(guildid)
-		blight_chance = await self.ff.get_blight_chance(guildid)
+		strengthened_percentage = ff.get_strengthened_percentage()
+		blight_strength = await ff.get_blight_strength()
+		blight_chance = await ff.get_blight_chance()
 		
 		embed = discord.Embed(
 			title = f"{member.name}'s farmer stats",
